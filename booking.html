@@ -1,0 +1,256 @@
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dr Samuel Manoj Cherukuri</title>
+
+  <!--
+    - favicon
+  -->
+  <link rel="shortcut icon" href="./assets/images/logo.ico" type="image/x-icon">
+
+  <!--
+    - custom css link
+  -->
+  <link rel="stylesheet" href="./assets/css/style.css">
+
+  <!--
+    - google font link
+  -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <!-- Google tag (gtag.js) -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-8QH0L2X0H0"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-8QH0L2X0H0');
+  </script>
+  <style>
+    .frame {
+    max-width: 100%;
+    }
+    #main_content {
+    padding: 0px; 
+    }
+    iframe {
+    height:calc(100vh - 4px);
+    width:calc(100vw - 2%);
+    box-sizing: border-box;
+    overflow: hidden;
+  }
+  </style>
+</head>
+
+<body>
+
+  <!--
+    - #MAIN
+  -->
+  <main>
+
+    <!--
+      - #SIDEBAR
+    -->
+
+    <aside class="sidebar" data-sidebar>
+
+      <div class="sidebar-info">
+
+        <figure class="avatar-box">
+          <img src="./assets/images/my-avatar.png" alt="Samuel Manoj" width="80">
+        </figure>
+
+        <div class="info-content">
+          <h1 class="name" title="Dr Samuel Manoj Cherukuri">Dr Samuel Manoj Cherukuri</h1>
+
+          <p class="title">Orthopedic Surgeon</p>
+        </div>
+
+        <button class="info_more-btn" data-sidebar-btn>
+          <span>Show Contacts</span>
+
+          <ion-icon name="chevron-down"></ion-icon>
+        </button>
+
+      </div>
+
+      <div class="sidebar-info_more">
+
+        <div class="separator"></div>
+
+        <ul class="contacts-list">
+
+          <li class="contact-item">
+
+            <div class="icon-box">
+              <ion-icon name="phone-portrait-outline"></ion-icon>
+            </div>
+
+            <div class="contact-info">
+              <p class="contact-title">Phone</p>
+
+              <a href="tel:+919866812555" class="contact-link">+91 98668 12555</a>
+            </div>
+
+          </li>
+          
+          <li class="contact-item">
+
+            <div class="icon-box">
+              <ion-icon name="mail-outline"></ion-icon>
+            </div>
+
+            <div class="contact-info">
+              <p class="contact-title">Email</p>
+
+              <a href="mailto:mail@orthosam.com" class="contact-link">mail@orthosam.com</a>
+            </div>
+
+          </li>
+
+          <li class="contact-item">
+
+            <div class="icon-box">
+              <ion-icon name="location-outline"></ion-icon>
+            </div>
+
+            <div class="contact-info">
+              <p class="contact-title">Address</p>
+
+              <address>Road 3, RR Nagar, Kakinada, India</address>
+            </div>
+
+          </li>
+
+        </ul>
+
+        <div class="separator"></div>
+
+        <ul class="social-list">
+
+          <li class="social-item">
+            <a href="https://www.facebook.com/drsamuelcherukuri" class="social-link">
+              <ion-icon name="logo-facebook"></ion-icon>
+            </a>
+          </li>
+
+          <li class="social-item">
+            <a href="https://wa.me/919866812555" class="social-link">
+              <ion-icon name="logo-whatsapp"></ion-icon>
+            </a>
+          </li>
+
+          <li class="social-item">
+            <a href="https://www.instagram.com/cherukurisamuelmanoj/" class="social-link">
+              <ion-icon name="logo-instagram"></ion-icon>
+            </a>
+          </li>
+
+        </ul>
+
+      </div>
+
+    </aside>
+
+
+
+
+
+    <!--
+      - #main-content
+    -->
+
+    <div class="main-content">
+
+      <!--
+        - #NAVBAR
+      -->
+
+      <nav class="navbar">
+
+        <ul class="navbar-list">
+
+          <li class="navbar-item">
+            <button class="navbar-link" onclick="location.href='/'" type="button">About</button>
+          </li>
+
+          <li class="navbar-item">
+            <button class="navbar-link" onclick="location.href='/'" type="button">Training</button>
+          </li>
+
+          <li class="navbar-item">
+            <button class="navbar-link" onclick="location.href='/'" type="button">Portfolio</button>
+          </li>
+
+          <li class="navbar-item">
+            <button class="navbar-link" onclick="location.href='/'" type="button">Contact</button>
+          </li>
+
+        </ul>
+
+      </nav>
+
+
+
+
+
+      <!--
+        - #ABOUT
+      -->
+
+      <article class="about  active" data-page="about">
+
+        <header>
+          <h2 class="h2 article-title">Book appointment</h2>
+        </header>
+
+        <section class="frame">
+          <iframe id= 'myFrame' src="" frameborder="0" allowfullscreen></iframe>
+        </section>
+
+      </article>
+     
+    </div>
+
+  </main>
+  <!--
+    - custom js link
+  -->
+  <script src="./assets/js/script.js"></script>
+
+  <!--
+    - ionicon link
+  -->
+  <script type="module" src="https://unpkg.com/ionicons@5.5.2/dist/ionicons/ionicons.esm.js"></script>
+  <script nomodule src="https://unpkg.com/ionicons@5.5.2/dist/ionicons/ionicons.js"></script>
+  <script>
+  var docId = urlParam() || "1";
+  
+  if (docId == "2"){
+  $(document).attr("title", "Dr Shalima Pinnamaneni");
+  $('#project_title').text("Dr Shalima Pinnamaneni");
+  $('p').html("Book appointment with <a href='https://orthosam.com/shalima/#about'>Dr Shalima Pinnamaneni</a> <small>M.D General Medicine</small> :");
+  $('#myFrame').attr('src', 'https://script.google.com/macros/s/AKfycbzn37Ftwqhb8UlFlv2xiOuEAWZoVLdJjhE_QhbOnwfXExUp32pi_zVAB0UhLyYLZZpF/exec');
+  } else {
+  $(document).attr("title", "Dr Samuel Manoj");
+  $('#project_title').text("Dr Samuel Manoj Ch");
+  $('p').html("Book appointment with <a href='https://orthosam.com/samuel/#about'>Dr Samuel Manoj Ch</a> <small>M.S Orthopaedics(Manipal)</small> :");
+  $('#myFrame').attr('src','https://script.google.com/macros/s/AKfycby0gj-pDf2IK0KDutU0JCP1-DXqrDUl2iFHPT4A0Ha50w4YwVYfv6RAf2Ydab-33U2rjQ/exec');
+  }
+  function urlParam(){
+  var url = new URL(window.location.href);
+  var param = url.searchParams.toString().slice(0, -1);
+  return param;
+  }
+  </script>
+
+</body>
+
+</html>
