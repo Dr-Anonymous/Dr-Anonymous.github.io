@@ -159,10 +159,9 @@ for (let i = 0; i < navigationLinks.length; i++) {
 }
 //hash navigation
 var hash = window.location.hash.substring(1);
-if (!hash) return;
-else {
+if (hash) {
   for (let i = 0; i < pages.length; i++) {
-      if (hash.innerHTML.toLowerCase() === pages[i].dataset.page) {
+      if (hash.toLowerCase() === pages[i].dataset.page) {
         pages[i].classList.add("active");
         navigationLinks[i].classList.add("active");
         window.scrollTo(0, 0);
