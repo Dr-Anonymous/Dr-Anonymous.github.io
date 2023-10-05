@@ -157,3 +157,18 @@ for (let i = 0; i < navigationLinks.length; i++) {
 
   });
 }
+//hash navigation
+var hash = window.location.hash.substring(1);
+if (!hash) return;
+else {
+  for (let i = 0; i < pages.length; i++) {
+      if (hash.innerHTML.toLowerCase() === pages[i].dataset.page) {
+        pages[i].classList.add("active");
+        navigationLinks[i].classList.add("active");
+        window.scrollTo(0, 0);
+      } else {
+        pages[i].classList.remove("active");
+        navigationLinks[i].classList.remove("active");
+      }
+    }
+}
