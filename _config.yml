@@ -1,7 +1,4 @@
-url: https://orthosam.com
 timezone: Asia/Calcutta
 permalink: pretty
 plugins:
-  - jemoji
-  - jekyll-sitemap
   - jekyll-redirect-from
