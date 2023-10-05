@@ -14,12 +14,12 @@
   <!--
     - favicon
   -->
-  <link rel="shortcut icon" href="./assets/images/logo.ico" type="image/x-icon">
+  <link rel="shortcut icon" href="/assets/images/logo.ico" type="image/x-icon">
 
   <!--
     - custom css link
   -->
-  <link rel="stylesheet" href="./assets/css/style.css">
+  <link rel="stylesheet" href="/assets/css/style.css">
 
   <!--
     - google font link
@@ -54,7 +54,7 @@
       <div class="sidebar-info">
 
         <figure class="avatar-box">
-          <img src="./assets/images/my-avatar.png" alt="Samuel Manoj" width="80">
+          <img src="/assets/images/my-avatar.png" alt="Samuel Manoj" width="80">
         </figure>
 
         <div class="info-content">
@@ -241,7 +241,7 @@
             <li class="service-item">
 
               <div class="service-icon-box">
-                <img src="./assets/images/bone.svg" alt="design icon" width="40">
+                <img src="/assets/images/bone.svg" alt="design icon" width="40">
               </div>
 
               <div class="service-content-box">
@@ -257,7 +257,7 @@
             <li class="service-item">
 
               <div class="service-icon-box">
-                <img src="./assets/images/scopy.svg" alt="Web development icon" width="40">
+                <img src="/assets/images/scopy.svg" alt="Web development icon" width="40">
               </div>
 
               <div class="service-content-box">
@@ -273,7 +273,7 @@
             <li class="service-item">
 
               <div class="service-icon-box">
-                <img src="./assets/images/plasty.svg" alt="mobile app icon" width="40">
+                <img src="/assets/images/plasty.svg" alt="mobile app icon" width="40">
               </div>
 
               <div class="service-content-box">
@@ -289,7 +289,7 @@
             <li class="service-item">
 
               <div class="service-icon-box">
-                <img src="./assets/images/back.svg" alt="camera icon" width="40">
+                <img src="/assets/images/back.svg" alt="camera icon" width="40">
               </div>
 
               <div class="service-content-box">
@@ -321,7 +321,7 @@
               <div class="content-card" data-testimonials-item>
 
                 <figure class="testimonials-avatar-box">
-                  <img src="./assets/images/avatar-1.png" alt="Daniel lewis" width="60" data-testimonials-avatar>
+                  <img src="/assets/images/avatar-1.png" alt="Daniel lewis" width="60" data-testimonials-avatar>
                 </figure>
 
                 <h4 class="h4 testimonials-item-title" data-testimonials-title>venkatesh b</h4>
@@ -339,7 +339,7 @@
               <div class="content-card" data-testimonials-item>
 
                 <figure class="testimonials-avatar-box">
-                  <img src="./assets/images/avatar-2.png" alt="Jessica miller" width="60" data-testimonials-avatar>
+                  <img src="/assets/images/avatar-2.png" alt="Jessica miller" width="60" data-testimonials-avatar>
                 </figure>
 
                 <h4 class="h4 testimonials-item-title" data-testimonials-title>suma jetty</h4>
@@ -357,7 +357,7 @@
               <div class="content-card" data-testimonials-item>
 
                 <figure class="testimonials-avatar-box">
-                  <img src="./assets/images/avatar-3.png" alt="Emily evans" width="60" data-testimonials-avatar>
+                  <img src="/assets/images/avatar-3.png" alt="Emily evans" width="60" data-testimonials-avatar>
                 </figure>
 
                 <h4 class="h4 testimonials-item-title" data-testimonials-title>satyaisp</h4>
@@ -375,7 +375,7 @@
               <div class="content-card" data-testimonials-item>
 
                 <figure class="testimonials-avatar-box">
-                  <img src="./assets/images/avatar-4.png" alt="Henry william" width="60" data-testimonials-avatar>
+                  <img src="/assets/images/avatar-4.png" alt="Henry william" width="60" data-testimonials-avatar>
                 </figure>
 
                 <h4 class="h4 testimonials-item-title" data-testimonials-title>Malhotra talasila</h4>
@@ -410,10 +410,10 @@
 
             <div class="modal-img-wrapper">
               <figure class="modal-avatar-box">
-                <img src="./assets/images/avatar-1.png" alt="Daniel lewis" width="80" data-modal-img>
+                <img src="/assets/images/avatar-1.png" alt="Daniel lewis" width="80" data-modal-img>
               </figure>
 
-              <img src="./assets/images/icon-quote.svg" alt="quote icon">
+              <img src="/assets/images/icon-quote.svg" alt="quote icon">
             </div>
 
             <div class="modal-content">
@@ -447,31 +447,31 @@
 
             <li class="clients-item">
               <a href="#">
-                <img src="./assets/images/logo-1-color.png" alt="client logo">
+                <img src="/assets/images/logo-1-color.png" alt="client logo">
               </a>
             </li>
 
             <li class="clients-item">
               <a href="#">
-                <img src="./assets/images/logo-2-color.png" alt="client logo">
+                <img src="/assets/images/logo-2-color.png" alt="client logo">
               </a>
             </li>
             <!--
             <li class="clients-item">
               <a href="#">
-                <img src="./assets/images/logo-3-color.png" alt="client logo">
+                <img src="/assets/images/logo-3-color.png" alt="client logo">
               </a>
             </li>
 
             <li class="clients-item">
               <a href="#">
-                <img src="./assets/images/logo-4-color.png" alt="client logo">
+                <img src="/assets/images/logo-4-color.png" alt="client logo">
               </a>
             </li>
 
             <li class="clients-item">
               <a href="#">
-                <img src="./assets/images/logo-5-color.png" alt="client logo">
+                <img src="/assets/images/logo-5-color.png" alt="client logo">
               </a>
             </li>
 
@@ -730,7 +730,7 @@
                     <ion-icon name="eye-outline"></ion-icon>
                   </div>
 
-                  <img src="./assets/images/project-1.jpg" alt="trauma" loading="lazy">
+                  <img src="/assets/images/project-1.jpg" alt="trauma" loading="lazy">
                 </figure>
 
                 <h3 class="project-title">Hip fracture</h3>
@@ -748,7 +748,7 @@
                     <ion-icon name="eye-outline"></ion-icon>
                   </div>
 
-                  <img src="./assets/images/project-2.jpg" alt="trauma" loading="lazy">
+                  <img src="/assets/images/project-2.jpg" alt="trauma" loading="lazy">
                 </figure>
 
                 <h3 class="project-title">Shoulder fracture</h3>
@@ -766,7 +766,7 @@
                     <ion-icon name="eye-outline"></ion-icon>
                   </div>
 
-                  <img src="./assets/images/project-3.jpg" alt="arthroplasty" loading="lazy">
+                  <img src="/assets/images/project-3.jpg" alt="arthroplasty" loading="lazy">
                 </figure>
 
                 <h3 class="project-title">Hip fracture</h3>
@@ -784,7 +784,7 @@
                     <ion-icon name="eye-outline"></ion-icon>
                   </div>
 
-                  <img src="./assets/images/project-4.png" alt="arthroscopy" loading="lazy">
+                  <img src="/assets/images/project-4.png" alt="arthroscopy" loading="lazy">
                 </figure>
 
                 <h3 class="project-title">ACL tear</h3>
@@ -802,7 +802,7 @@
                     <ion-icon name="eye-outline"></ion-icon>
                   </div>
 
-                  <img src="./assets/images/project-5.png" alt="arthroplasty" loading="lazy">
+                  <img src="/assets/images/project-5.png" alt="arthroplasty" loading="lazy">
                 </figure>
 
                 <h3 class="project-title">Hip arthritis</h3>
@@ -820,7 +820,7 @@
                     <ion-icon name="eye-outline"></ion-icon>
                   </div>
 
-                  <img src="./assets/images/project-6.png" alt="spine" loading="lazy">
+                  <img src="/assets/images/project-6.png" alt="spine" loading="lazy">
                 </figure>
 
                 <h3 class="project-title">Sliped vertebrae</h3>
@@ -838,7 +838,7 @@
                     <ion-icon name="eye-outline"></ion-icon>
                   </div>
 
-                  <img src="./assets/images/project-7.png" alt="trauma" loading="lazy">
+                  <img src="/assets/images/project-7.png" alt="trauma" loading="lazy">
                 </figure>
 
                 <h3 class="project-title">Wrist fracture</h3>
@@ -856,7 +856,7 @@
                     <ion-icon name="eye-outline"></ion-icon>
                   </div>
 
-                  <img src="./assets/images/project-8.jpg" alt="arthroplasty" loading="lazy">
+                  <img src="/assets/images/project-8.jpg" alt="arthroplasty" loading="lazy">
                 </figure>
 
                 <h3 class="project-title">Knee arthritis</h3>
@@ -874,7 +874,7 @@
                     <ion-icon name="eye-outline"></ion-icon>
                   </div>
 
-                  <img src="./assets/images/project-9.png" alt="trauma" loading="lazy">
+                  <img src="/assets/images/project-9.png" alt="trauma" loading="lazy">
                 </figure>
 
                 <h3 class="project-title">Arm fracture</h3>
@@ -912,7 +912,7 @@
               <a href="#">
 
                 <figure class="blog-banner-box">
-                  <img src="./assets/images/blog-1.jpg" alt="Design conferences in 2022" loading="lazy">
+                  <img src="/assets/images/blog-1.jpg" alt="Design conferences in 2022" loading="lazy">
                 </figure>
 
                 <div class="blog-content">
@@ -940,7 +940,7 @@
               <a href="#">
 
                 <figure class="blog-banner-box">
-                  <img src="./assets/images/blog-2.jpg" alt="Best fonts every designer" loading="lazy">
+                  <img src="/assets/images/blog-2.jpg" alt="Best fonts every designer" loading="lazy">
                 </figure>
 
                 <div class="blog-content">
@@ -968,7 +968,7 @@
               <a href="#">
 
                 <figure class="blog-banner-box">
-                  <img src="./assets/images/blog-3.jpg" alt="Design digest #80" loading="lazy">
+                  <img src="/assets/images/blog-3.jpg" alt="Design digest #80" loading="lazy">
                 </figure>
 
                 <div class="blog-content">
@@ -996,7 +996,7 @@
               <a href="#">
 
                 <figure class="blog-banner-box">
-                  <img src="./assets/images/blog-4.jpg" alt="UI interactions of the week" loading="lazy">
+                  <img src="/assets/images/blog-4.jpg" alt="UI interactions of the week" loading="lazy">
                 </figure>
 
                 <div class="blog-content">
@@ -1024,7 +1024,7 @@
               <a href="#">
 
                 <figure class="blog-banner-box">
-                  <img src="./assets/images/blog-5.jpg" alt="The forgotten art of spacing" loading="lazy">
+                  <img src="/assets/images/blog-5.jpg" alt="The forgotten art of spacing" loading="lazy">
                 </figure>
 
                 <div class="blog-content">
@@ -1052,7 +1052,7 @@
               <a href="#">
 
                 <figure class="blog-banner-box">
-                  <img src="./assets/images/blog-6.jpg" alt="Design digest #79" loading="lazy">
+                  <img src="/assets/images/blog-6.jpg" alt="Design digest #79" loading="lazy">
                 </figure>
 
                 <div class="blog-content">
@@ -1213,7 +1213,7 @@
   <!--
     - custom js link
   -->
-  <script src="./assets/js/script.js"></script>
+  <script src="/assets/js/script.js"></script>
 
   <!--
     - ionicon link
