@@ -1,4 +1,4 @@
 ---
 permalink: /404.html
-redirect_to: "https://orthosam.com/#"{{page.url}}
+redirect_to: {% capture url_path %}{{ site.url }} /# {{ page.url }}{% endcapture %}
 ---
