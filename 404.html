@@ -3,5 +3,5 @@ permalink: /404.html
 ---
 
 <script>
-  window.location.replace("https://orthosam.com/#" + (location.pathname).substr(1));
+  window.location.replace("https://orthosam.com/#" + (location.pathname).replace(/\//g, ''));
 </script>
