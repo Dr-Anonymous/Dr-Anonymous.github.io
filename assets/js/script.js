@@ -159,16 +159,18 @@ for (let i = 0; i < navigationLinks.length; i++) {
 
 //hash navigation
 var hash = window.location.hash.substring(1);
+var noPage = true; /* lets assume no such page */
 if (hash) {
   for (let i = 0; i < pages.length; i++) {
       if (hash.toLowerCase() === pages[i].dataset.page) {
         pages[i].classList.add("active");
         navigationLinks[i].classList.add("active");
         window.scrollTo(0, 0);
+        noPage = false; /*  page exists */
       } else {
         pages[i].classList.remove("active");
         navigationLinks[i].classList.remove("active");
-        document.getElementsByClassName('error')[0].classList.add('active')
       }
+    if (noPage) document.getElementsByClassName('error')[0].classList.add('active');
     }
 }
