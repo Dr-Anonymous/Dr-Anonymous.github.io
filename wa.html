@@ -14,7 +14,7 @@
         
         <script>
         function process(){
-            location = "https://wa.me/" + (document.getElementById("phone").value).replace(/[^A-Z0-9]+/ig, "");
+            location = "https://wa.me/" + (document.getElementById("phone").value).replace(/[^A-Z0-9]+/ig, "") + "?text=%2F";
         }
         </script>
     </body>
