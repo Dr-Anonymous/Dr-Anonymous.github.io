@@ -49,7 +49,7 @@
         phone.addEventListener("focus", (event) => {
            try {
              const text = await navigator.clipboard.readText()
-             event.value += text;
+             event.target.value += text;
            } catch (error) {
              console.log('Failed to read clipboard');
            }
