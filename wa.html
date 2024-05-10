@@ -27,7 +27,6 @@
         <div>
         <label class="col-12" for="phone">Enter a whatsapp number:</label><br><br>
         <input class = "col-12" type="tel" id="phone" name="phone" placeholder="1234567890" pattern="[0-9]{3}-[0-9]{2}-[0-9]{3}" required><br><br>
-        <input class="col-6" type="button" id="paste-button" value="Paste">
         <input class="col-6" type="button" value="WhatsApp" onclick="process(1);return false;">
         <input class="col-6" type="button" value="Laxmi" onclick="process(2);return false;">
         <input class="col-6" type="button" value="Home" onclick="process(3);return false;">
@@ -46,11 +45,11 @@
             location = "https://wa.me/" + (document.getElementById("phone").value).replace(/[^A-Z0-9]+/ig, "") + "?text=" + address;
         }
         
-        const pasteButton = document.getElementById('paste-button');
-        pasteButton.addEventListener('click', async () => {
+        const phone = document.getElementById('phone');
+        phone.addEventListener("focus", (event) => {
            try {
              const text = await navigator.clipboard.readText()
-             document.getElementById("phone").value += text;
+             event.value += text;
            } catch (error) {
              console.log('Failed to read clipboard');
            }
