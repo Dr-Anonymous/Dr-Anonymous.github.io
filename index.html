@@ -967,10 +967,21 @@
         <section>
           <!-- Lazy-load the iframe -->
           <!-- Google Calendar Appointment Scheduling begin -->
-          <iframe src="https://calendar.google.com/calendar/appointments/schedules/AcZssZ1ZpZrCRWwg4-mfHc2yrES39tCFTwICS9q3JKKbOftnqXbUGdpn8KAT_i7k6qtVGRpoT7yD5Z9p?gv=true" 
-                  style="border: 0" width="100%" height="100vh" frameborder="0"
-                  loading="lazy">
-                  </iframe>
+          <link href="https://calendar.google.com/calendar/scheduling-button-script.css" rel="stylesheet">
+          <script src="https://calendar.google.com/calendar/scheduling-button-script.js" async></script>
+          <script>
+          (function() {
+            var target = document.currentScript;
+            window.addEventListener('load', function() {
+              calendar.schedulingButton.load({
+                url: 'https://calendar.google.com/calendar/appointments/schedules/AcZssZ1ZpZrCRWwg4-mfHc2yrES39tCFTwICS9q3JKKbOftnqXbUGdpn8KAT_i7k6qtVGRpoT7yD5Z9p?gv=true',
+                color: 'currentcolor',
+                label: 'Book an appointment',
+                target,
+              });
+            });
+          })();
+          </script>
           <!-- end Google Calendar Appointment Scheduling -->
           
           <!--<iframe src="https://script.google.com/macros/s/AKfycbyrZSw3UVmGYrRhRUyaU03QJ2hItpu64EZ4df5UduZaYiEP0LL_wP7TvZGMavZUqHg2LA/exec"
