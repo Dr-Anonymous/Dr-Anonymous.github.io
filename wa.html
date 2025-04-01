@@ -1,7 +1,6 @@
 ---
 ---
 
-
 <html>
     <head>
         <meta charset="UTF-8">
@@ -26,12 +25,15 @@
     <body>
         <div>
         <label class="col-12" for="phone">Enter a whatsapp number:</label><br><br>
-        <input class = "col-12" type="tel" id="phone" name="phone" placeholder="1234567890" pattern="[0-9]{3}-[0-9]{2}-[0-9]{3}" required><br>
+        <input class = "col-12" type="tel" id="phone" name="phone" placeholder="1234567890" pattern="[0-9]{3}-[0-9]{2}-[0-9]{3}" required>
+        <div class="col-12">Send to the above number:</div>
         <input class="col-6" type="button" value="SMS" onclick="sms();return false;">
         <input class="col-6" type="button" value="WhatsApp" onclick="process(1);return false;">
         <input class="col-6" type="button" value="Laxmi" onclick="process(2);return false;">
         <input class="col-6" type="button" value="Home" onclick="process(3);return false;">
-        
+        <div class="col-12">Send the number to:</div>
+        <input class="col-6" type="button" value="Reception" onclick="inform(1);return false;">
+        <input class="col-6" type="button" value="OP" onclick="inform(2);return false;">
         </div>
         <script>
         function process(e){
@@ -45,6 +47,19 @@
             }
                 
             location = "https://wa.me/" + (document.getElementById("phone").value).replace(/[^A-Z0-9]+/ig, "") + "?text=" + address;
+        }
+        
+        function inform(e){
+            var address;
+            switch (e){
+                case 1: address = "https://wa.me/917093551714?text=" + (document.getElementById("phone").value).replace(/[^A-Z0-9]+/ig, "") ;
+                    break;
+                case 2: address = "https://wa.me/919652377616?text=" + (document.getElementById("phone").value).replace(/[^A-Z0-9]+/ig, "") ;
+                    break;
+                default: address = "%2F";
+            }
+                
+            location = address;
         }
         
         const phone = document.getElementById('phone');
