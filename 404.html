@@ -3,5 +3,9 @@ permalink: /404.html
 ---
 
 <script>
-  window.location.replace("https://orthosam.com/#" + (location.pathname).replace(/\//g, ''));
+  var path = (location.pathname).replace(/\//g, ''));
+  if (path = "booking")
+    window.location.replace("https://ortho.life/#book-appointment");
+  else
+    window.location.replace("https://orthosam.com/#" + path;
 </script>
