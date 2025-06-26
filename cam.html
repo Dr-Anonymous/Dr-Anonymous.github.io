@@ -1,0 +1,672 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GPS Photo Tagger</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .header {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            padding: 1rem;
+            text-align: center;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .header h1 {
+            color: white;
+            font-size: 1.5rem;
+            font-weight: 600;
+        }
+
+        .main-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            padding: 1rem;
+            gap: 1rem;
+        }
+
+        .camera-section {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 1.5rem;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
+        }
+
+        .camera-controls {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .file-input-wrapper {
+            position: relative;
+            overflow: hidden;
+            display: inline-block;
+            width: 100%;
+        }
+
+        .file-input-wrapper input[type=file] {
+            position: absolute;
+            left: -9999px;
+        }
+
+        .file-input-label {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            padding: 1rem;
+            background: linear-gradient(45deg, #4CAF50, #45a049);
+            color: white;
+            border-radius: 12px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(76, 175, 80, 0.3);
+        }
+
+        .file-input-label:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(76, 175, 80, 0.4);
+        }
+
+        .location-info {
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 15px;
+            padding: 1.5rem;
+            margin-top: 1rem;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .location-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.5rem 0;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+        }
+
+        .location-row:last-child {
+            border-bottom: none;
+        }
+
+        .location-label {
+            font-weight: 600;
+            color: #333;
+            min-width: 80px;
+        }
+
+        .location-value {
+            color: #666;
+            text-align: right;
+            flex: 1;
+            margin-left: 1rem;
+            font-family: monospace;
+        }
+
+        .get-location-btn {
+            background: linear-gradient(45deg, #2196F3, #1976D2);
+            color: white;
+            border: none;
+            padding: 1rem;
+            border-radius: 12px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(33, 150, 243, 0.3);
+        }
+
+        .get-location-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(33, 150, 243, 0.4);
+        }
+
+        .get-location-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .photo-preview {
+            margin-top: 1rem;
+            text-align: center;
+        }
+
+        .photo-preview img {
+            max-width: 100%;
+            max-height: 300px;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+        }
+
+        .tagged-photo-canvas {
+            max-width: 100%;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+            margin-top: 1rem;
+        }
+
+        .download-section {
+            margin-top: 1rem;
+            display: flex;
+            gap: 1rem;
+        }
+
+        .download-btn {
+            flex: 1;
+            background: linear-gradient(45deg, #FF6B6B, #FF5252);
+            color: white;
+            border: none;
+            padding: 1rem;
+            border-radius: 12px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(255, 107, 107, 0.3);
+        }
+
+        .download-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(255, 107, 107, 0.4);
+        }
+
+        .download-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .status {
+            padding: 1rem;
+            border-radius: 12px;
+            margin-top: 1rem;
+            font-weight: 500;
+        }
+
+        .status.success {
+            background: rgba(76, 175, 80, 0.1);
+            color: #4CAF50;
+            border: 1px solid rgba(76, 175, 80, 0.3);
+        }
+
+        .status.error {
+            background: rgba(244, 67, 54, 0.1);
+            color: #f44336;
+            border: 1px solid rgba(244, 67, 54, 0.3);
+        }
+
+        .status.info {
+            background: rgba(33, 150, 243, 0.1);
+            color: #2196F3;
+            border: 1px solid rgba(33, 150, 243, 0.3);
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 1rem;
+        }
+
+        .spinner {
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top: 3px solid #667eea;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 0.5rem;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .options-section {
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 15px;
+            padding: 1.5rem;
+            margin-top: 1rem;
+        }
+
+        .option-group {
+            margin-bottom: 1rem;
+        }
+
+        .option-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .option-group select,
+        .option-group input[type="color"],
+        .option-group input[type="range"] {
+            width: 100%;
+            padding: 0.5rem;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 1rem;
+        }
+
+        .range-value {
+            display: inline-block;
+            margin-left: 0.5rem;
+            font-weight: 600;
+            color: #667eea;
+        }
+
+        @media (max-width: 768px) {
+            .main-container {
+                padding: 0.5rem;
+            }
+            
+            .camera-section {
+                padding: 1rem;
+            }
+            
+            .download-section {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>📍 GPS Photo Tagger</h1>
+    </div>
+
+    <div class="main-container">
+        <div class="camera-section">
+            <div class="camera-controls">
+                <div class="file-input-wrapper">
+                    <input type="file" id="photoInput" accept="image/*" capture="environment">
+                    <label for="photoInput" class="file-input-label">
+                        📸 Take Photo / Select Image
+                    </label>
+                </div>
+                
+                <button class="get-location-btn" id="getLocationBtn">
+                    📡 Get Current Location
+                </button>
+            </div>
+
+            <div class="loading" id="loading">
+                <div class="spinner"></div>
+                <div>Getting location...</div>
+            </div>
+
+            <div class="location-info" id="locationInfo" style="display: none;">
+                <div class="location-row">
+                    <span class="location-label">Latitude:</span>
+                    <span class="location-value" id="latitude">-</span>
+                </div>
+                <div class="location-row">
+                    <span class="location-label">Longitude:</span>
+                    <span class="location-value" id="longitude">-</span>
+                </div>
+                <div class="location-row">
+                    <span class="location-label">Address:</span>
+                    <span class="location-value" id="address">-</span>
+                </div>
+                <div class="location-row">
+                    <span class="location-label">Accuracy:</span>
+                    <span class="location-value" id="accuracy">-</span>
+                </div>
+                <div class="location-row">
+                    <span class="location-label">Timestamp:</span>
+                    <span class="location-value" id="timestamp">-</span>
+                </div>
+            </div>
+
+            <div class="photo-preview" id="photoPreview"></div>
+            
+            <div class="download-section" id="downloadSection" style="display: none;">
+                <button class="download-btn" id="processBtn">
+                    🏷️ Add Location Tag
+                </button>
+                <button class="download-btn" id="downloadBtn" style="display: none;">
+                    💾 Download Tagged Photo
+                </button>
+            </div>
+
+            <div id="status" class="status" style="display: none;"></div>
+        </div>
+
+        <div class="options-section">
+            <h3 style="margin-bottom: 1rem; color: #333;">📋 Tagging Options</h3>
+            
+            <div class="option-group">
+                <label for="overlayPosition">Overlay Position:</label>
+                <select id="overlayPosition">
+                    <option value="bottom-left">Bottom Left</option>
+                    <option value="bottom-right">Bottom Right</option>
+                    <option value="top-left">Top Left</option>
+                    <option value="top-right">Top Right</option>
+                </select>
+            </div>
+
+            <div class="option-group">
+                <label for="overlayColor">Text Color:</label>
+                <input type="color" id="overlayColor" value="#ffffff">
+            </div>
+
+            <div class="option-group">
+                <label for="overlayBgColor">Background Color:</label>
+                <input type="color" id="overlayBgColor" value="#000000">
+            </div>
+
+            <div class="option-group">
+                <label for="fontSize">Font Size:</label>
+                <input type="range" id="fontSize" min="12" max="48" value="16">
+                <span class="range-value" id="fontSizeValue">16px</span>
+            </div>
+
+            <div class="option-group">
+                <label for="backgroundOpacity">Background Opacity:</label>
+                <input type="range" id="backgroundOpacity" min="0" max="100" value="70">
+                <span class="range-value" id="backgroundOpacityValue">70%</span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentLocation = null;
+        let currentPhoto = null;
+        let processedCanvas = null;
+
+        // Elements
+        const photoInput = document.getElementById('photoInput');
+        const getLocationBtn = document.getElementById('getLocationBtn');
+        const loading = document.getElementById('loading');
+        const locationInfo = document.getElementById('locationInfo');
+        const photoPreview = document.getElementById('photoPreview');
+        const downloadSection = document.getElementById('downloadSection');
+        const processBtn = document.getElementById('processBtn');
+        const downloadBtn = document.getElementById('downloadBtn');
+        const status = document.getElementById('status');
+
+        // Option elements
+        const overlayPosition = document.getElementById('overlayPosition');
+        const overlayColor = document.getElementById('overlayColor');
+        const overlayBgColor = document.getElementById('overlayBgColor');
+        const fontSize = document.getElementById('fontSize');
+        const backgroundOpacity = document.getElementById('backgroundOpacity');
+        const fontSizeValue = document.getElementById('fontSizeValue');
+        const backgroundOpacityValue = document.getElementById('backgroundOpacityValue');
+
+        // Update range value displays
+        fontSize.addEventListener('input', () => {
+            fontSizeValue.textContent = fontSize.value + 'px';
+        });
+
+        backgroundOpacity.addEventListener('input', () => {
+            backgroundOpacityValue.textContent = backgroundOpacity.value + '%';
+        });
+
+        // Get location functionality
+        getLocationBtn.addEventListener('click', async () => {
+            if (!navigator.geolocation) {
+                showStatus('Geolocation is not supported by this browser.', 'error');
+                return;
+            }
+
+            loading.style.display = 'block';
+            getLocationBtn.disabled = true;
+
+            const options = {
+                enableHighAccuracy: true,
+                timeout: 10000,
+                maximumAge: 0
+            };
+
+            navigator.geolocation.getCurrentPosition(
+                async (position) => {
+                    currentLocation = {
+                        latitude: position.coords.latitude,
+                        longitude: position.coords.longitude,
+                        accuracy: position.coords.accuracy,
+                        timestamp: new Date().toLocaleString()
+                    };
+
+                    // Try to get address from coordinates
+                    try {
+                        const address = await reverseGeocode(currentLocation.latitude, currentLocation.longitude);
+                        currentLocation.address = address;
+                    } catch (error) {
+                        currentLocation.address = 'Address unavailable';
+                    }
+
+                    displayLocationInfo();
+                    loading.style.display = 'none';
+                    getLocationBtn.disabled = false;
+                    showStatus('Location acquired successfully!', 'success');
+                },
+                (error) => {
+                    loading.style.display = 'none';
+                    getLocationBtn.disabled = false;
+                    let message = 'Error getting location: ';
+                    
+                    switch(error.code) {
+                        case error.PERMISSION_DENIED:
+                            message += 'Permission denied. Please allow location access.';
+                            break;
+                        case error.POSITION_UNAVAILABLE:
+                            message += 'Position unavailable.';
+                            break;
+                        case error.TIMEOUT:
+                            message += 'Request timeout.';
+                            break;
+                        default:
+                            message += 'Unknown error.';
+                    }
+                    
+                    showStatus(message, 'error');
+                },
+                options
+            );
+        });
+
+        // Simple reverse geocoding (using a mock service for demo)
+        async function reverseGeocode(lat, lng) {
+            // In a real app, you'd use a service like Google Maps, OpenStreetMap Nominatim, etc.
+            // For demo purposes, we'll return a formatted string
+            return `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+        }
+
+        function displayLocationInfo() {
+            if (!currentLocation) return;
+
+            document.getElementById('latitude').textContent = currentLocation.latitude.toFixed(6);
+            document.getElementById('longitude').textContent = currentLocation.longitude.toFixed(6);
+            document.getElementById('address').textContent = currentLocation.address;
+            document.getElementById('accuracy').textContent = `±${Math.round(currentLocation.accuracy)}m`;
+            document.getElementById('timestamp').textContent = currentLocation.timestamp;
+
+            locationInfo.style.display = 'block';
+        }
+
+        // Photo input handling
+        photoInput.addEventListener('change', (event) => {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    currentPhoto = e.target.result;
+                    displayPhoto();
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        function displayPhoto() {
+            if (!currentPhoto) return;
+
+            photoPreview.innerHTML = `<img src="${currentPhoto}" alt="Selected photo">`;
+            downloadSection.style.display = 'flex';
+            downloadBtn.style.display = 'none';
+        }
+
+        // Process photo with location overlay
+        processBtn.addEventListener('click', () => {
+            if (!currentPhoto) {
+                showStatus('Please select a photo first.', 'error');
+                return;
+            }
+
+            if (!currentLocation) {
+                showStatus('Please get location first.', 'error');
+                return;
+            }
+
+            processPhotoWithLocation();
+        });
+
+        function processPhotoWithLocation() {
+            const img = new Image();
+            img.onload = () => {
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+
+                // Set canvas size to match image
+                canvas.width = img.width;
+                canvas.height = img.height;
+
+                // Draw the original image
+                ctx.drawImage(img, 0, 0);
+
+                // Add location overlay
+                addLocationOverlay(ctx, canvas.width, canvas.height);
+
+                // Store processed canvas
+                processedCanvas = canvas;
+
+                // Display the processed image
+                photoPreview.innerHTML = '';
+                canvas.className = 'tagged-photo-canvas';
+                photoPreview.appendChild(canvas);
+
+                downloadBtn.style.display = 'block';
+                showStatus('Photo tagged successfully!', 'success');
+            };
+
+            img.src = currentPhoto;
+        }
+
+        function addLocationOverlay(ctx, width, height) {
+            const fontSizeValue = parseInt(fontSize.value);
+            const position = overlayPosition.value;
+            const textColor = overlayColor.value;
+            const bgColor = overlayBgColor.value;
+            const bgOpacity = backgroundOpacity.value / 100;
+
+            // Location text
+            const locationText = [
+                `📍 ${currentLocation.latitude.toFixed(6)}, ${currentLocation.longitude.toFixed(6)}`,
+                `🏠 ${currentLocation.address}`,
+                `📅 ${currentLocation.timestamp}`,
+                `🎯 ±${Math.round(currentLocation.accuracy)}m`
+            ];
+
+            ctx.font = `${fontSizeValue}px Arial`;
+            ctx.textAlign = 'left';
+
+            // Calculate text dimensions
+            const lineHeight = fontSizeValue * 1.2;
+            const maxWidth = Math.max(...locationText.map(text => ctx.measureText(text).width));
+            const textHeight = locationText.length * lineHeight;
+
+            // Calculate position
+            let x, y;
+            const padding = 20;
+
+            switch (position) {
+                case 'top-left':
+                    x = padding;
+                    y = padding;
+                    break;
+                case 'top-right':
+                    x = width - maxWidth - padding;
+                    y = padding;
+                    break;
+                case 'bottom-left':
+                    x = padding;
+                    y = height - textHeight - padding;
+                    break;
+                case 'bottom-right':
+                    x = width - maxWidth - padding;
+                    y = height - textHeight - padding;
+                    break;
+            }
+
+            // Draw background
+            ctx.fillStyle = `${bgColor}${Math.round(bgOpacity * 255).toString(16).padStart(2, '0')}`;
+            ctx.fillRect(x - 10, y - 10, maxWidth + 20, textHeight + 20);
+
+            // Draw text
+            ctx.fillStyle = textColor;
+            locationText.forEach((text, index) => {
+                ctx.fillText(text, x, y + (index + 1) * lineHeight);
+            });
+        }
+
+        // Download functionality
+        downloadBtn.addEventListener('click', () => {
+            if (!processedCanvas) {
+                showStatus('No processed photo to download.', 'error');
+                return;
+            }
+
+            processedCanvas.toBlob((blob) => {
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `gps-tagged-photo-${Date.now()}.jpg`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                
+                showStatus('Photo downloaded successfully!', 'success');
+            }, 'image/jpeg', 0.9);
+        });
+
+        function showStatus(message, type) {
+            status.textContent = message;
+            status.className = `status ${type}`;
+            status.style.display = 'block';
+            
+            setTimeout(() => {
+                status.style.display = 'none';
+            }, 5000);
+        }
+
+        // Auto-get location on page load
+        window.addEventListener('load', () => {
+            showStatus('Welcome! Click "Get Current Location" to start geotagging photos.', 'info');
+        });
+    </script>
+</body>
+</html>
