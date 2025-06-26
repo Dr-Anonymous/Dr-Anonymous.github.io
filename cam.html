@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GPS Photo Tagger</title>
+    <title>GPS Map Camera</title>
     <style>
         * {
             margin: 0;
@@ -49,18 +49,12 @@
             backdrop-filter: blur(10px);
         }
 
-        .camera-controls {
-            display: flex;
-            flex-direction: column;
-            gap: 1rem;
-            margin-bottom: 1rem;
-        }
-
         .file-input-wrapper {
             position: relative;
             overflow: hidden;
             display: inline-block;
             width: 100%;
+            margin-bottom: 1rem;
         }
 
         .file-input-wrapper input[type=file] {
@@ -89,72 +83,71 @@
             box-shadow: 0 6px 20px rgba(76, 175, 80, 0.4);
         }
 
-        .location-info {
+        .input-section {
             background: rgba(255, 255, 255, 0.9);
             border-radius: 15px;
             padding: 1.5rem;
-            margin-top: 1rem;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            margin-bottom: 1rem;
         }
 
-        .location-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 0.5rem 0;
-            border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+        .input-section h3 {
+            margin-bottom: 1rem;
+            color: #333;
+            font-size: 1.1rem;
         }
 
-        .location-row:last-child {
-            border-bottom: none;
+        .input-group {
+            margin-bottom: 1rem;
         }
 
-        .location-label {
+        .input-group:last-child {
+            margin-bottom: 0;
+        }
+
+        .input-group label {
+            display: block;
+            margin-bottom: 0.5rem;
             font-weight: 600;
             color: #333;
-            min-width: 80px;
+            font-size: 0.9rem;
         }
 
-        .location-value {
-            color: #666;
-            text-align: right;
-            flex: 1;
-            margin-left: 1rem;
-            font-family: monospace;
-        }
-
-        .get-location-btn {
-            background: linear-gradient(45deg, #2196F3, #1976D2);
-            color: white;
-            border: none;
-            padding: 1rem;
-            border-radius: 12px;
-            cursor: pointer;
+        .input-group input,
+        .input-group textarea {
+            width: 100%;
+            padding: 0.75rem;
+            border: 2px solid #ddd;
+            border-radius: 8px;
             font-size: 1rem;
-            font-weight: 500;
-            transition: all 0.3s ease;
-            box-shadow: 0 4px 15px rgba(33, 150, 243, 0.3);
+            transition: border-color 0.3s ease;
         }
 
-        .get-location-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(33, 150, 243, 0.4);
+        .input-group input:focus,
+        .input-group textarea:focus {
+            outline: none;
+            border-color: #667eea;
         }
 
-        .get-location-btn:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-            transform: none;
+        .input-group textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+
+        .coord-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
         }
 
         .photo-preview {
             margin-top: 1rem;
             text-align: center;
+            position: relative;
         }
 
         .photo-preview img {
             max-width: 100%;
-            max-height: 300px;
+            max-height: 400px;
             border-radius: 12px;
             box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
         }
@@ -166,88 +159,60 @@
             margin-top: 1rem;
         }
 
-        .download-section {
-            margin-top: 1rem;
-            display: flex;
+        .action-buttons {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
             gap: 1rem;
+            margin-top: 1rem;
         }
 
-        .download-btn {
-            flex: 1;
-            background: linear-gradient(45deg, #FF6B6B, #FF5252);
-            color: white;
-            border: none;
+        .btn {
             padding: 1rem;
+            border: none;
             border-radius: 12px;
             cursor: pointer;
             font-size: 1rem;
             font-weight: 500;
             transition: all 0.3s ease;
+        }
+
+        .btn-process {
+            background: linear-gradient(45deg, #2196F3, #1976D2);
+            color: white;
+            box-shadow: 0 4px 15px rgba(33, 150, 243, 0.3);
+        }
+
+        .btn-process:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(33, 150, 243, 0.4);
+        }
+
+        .btn-download {
+            background: linear-gradient(45deg, #FF6B6B, #FF5252);
+            color: white;
             box-shadow: 0 4px 15px rgba(255, 107, 107, 0.3);
         }
 
-        .download-btn:hover {
+        .btn-download:hover {
             transform: translateY(-2px);
             box-shadow: 0 6px 20px rgba(255, 107, 107, 0.4);
         }
 
-        .download-btn:disabled {
+        .btn:disabled {
             opacity: 0.6;
             cursor: not-allowed;
             transform: none;
-        }
-
-        .status {
-            padding: 1rem;
-            border-radius: 12px;
-            margin-top: 1rem;
-            font-weight: 500;
-        }
-
-        .status.success {
-            background: rgba(76, 175, 80, 0.1);
-            color: #4CAF50;
-            border: 1px solid rgba(76, 175, 80, 0.3);
-        }
-
-        .status.error {
-            background: rgba(244, 67, 54, 0.1);
-            color: #f44336;
-            border: 1px solid rgba(244, 67, 54, 0.3);
-        }
-
-        .status.info {
-            background: rgba(33, 150, 243, 0.1);
-            color: #2196F3;
-            border: 1px solid rgba(33, 150, 243, 0.3);
-        }
-
-        .loading {
-            display: none;
-            text-align: center;
-            padding: 1rem;
-        }
-
-        .spinner {
-            border: 3px solid rgba(255, 255, 255, 0.3);
-            border-radius: 50%;
-            border-top: 3px solid #667eea;
-            width: 30px;
-            height: 30px;
-            animation: spin 1s linear infinite;
-            margin: 0 auto 0.5rem;
-        }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
         }
 
         .options-section {
             background: rgba(255, 255, 255, 0.9);
             border-radius: 15px;
             padding: 1.5rem;
-            margin-top: 1rem;
+        }
+
+        .options-section h3 {
+            margin-bottom: 1rem;
+            color: #333;
         }
 
         .option-group {
@@ -278,6 +243,101 @@
             color: #667eea;
         }
 
+        .status {
+            padding: 1rem;
+            border-radius: 12px;
+            margin-top: 1rem;
+            font-weight: 500;
+        }
+
+        .status.success {
+            background: rgba(76, 175, 80, 0.1);
+            color: #4CAF50;
+            border: 1px solid rgba(76, 175, 80, 0.3);
+        }
+
+        .status.error {
+            background: rgba(244, 67, 54, 0.1);
+            color: #f44336;
+            border: 1px solid rgba(244, 67, 54, 0.3);
+        }
+
+        /* Overlay Preview Styles - Matching the reference image */
+        .overlay-preview {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 15px;
+            border-radius: 8px;
+            font-family: 'Segoe UI', sans-serif;
+            font-size: 14px;
+            line-height: 1.4;
+            backdrop-filter: blur(5px);
+        }
+
+        .overlay-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+
+        .gps-icon {
+            width: 24px;
+            height: 24px;
+            background: #4285f4;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 12px;
+        }
+
+        .location-main {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .location-address {
+            font-size: 13px;
+            color: #ccc;
+            margin-bottom: 8px;
+        }
+
+        .location-coords {
+            font-size: 12px;
+            color: #ccc;
+            margin-bottom: 4px;
+        }
+
+        .location-timestamp {
+            font-size: 12px;
+            color: #ccc;
+        }
+
+        .map-placeholder {
+            position: absolute;
+            bottom: 15px;
+            left: 15px;
+            width: 120px;
+            height: 80px;
+            background: #f0f0f0;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            color: #666;
+            border: 2px solid white;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+        }
+
         @media (max-width: 768px) {
             .main-container {
                 padding: 0.5rem;
@@ -287,67 +347,80 @@
                 padding: 1rem;
             }
             
-            .download-section {
-                flex-direction: column;
+            .coord-row {
+                grid-template-columns: 1fr;
+            }
+            
+            .action-buttons {
+                grid-template-columns: 1fr;
+            }
+
+            .overlay-preview {
+                font-size: 12px;
+            }
+
+            .location-main {
+                font-size: 16px;
+            }
+
+            .map-placeholder {
+                width: 100px;
+                height: 70px;
             }
         }
     </style>
 </head>
 <body>
     <div class="header">
-        <h1>📍 GPS Photo Tagger</h1>
+        <h1>📍 GPS Map Camera</h1>
     </div>
 
     <div class="main-container">
         <div class="camera-section">
-            <div class="camera-controls">
-                <div class="file-input-wrapper">
-                    <input type="file" id="photoInput" accept="image/*" capture="environment">
-                    <label for="photoInput" class="file-input-label">
-                        📸 Take Photo / Select Image
-                    </label>
-                </div>
+            <div class="file-input-wrapper">
+                <input type="file" id="photoInput" accept="image/*" capture="environment">
+                <label for="photoInput" class="file-input-label">
+                    📸 Take Photo / Select Image
+                </label>
+            </div>
+
+            <div class="input-section">
+                <h3>📍 Location Information</h3>
                 
-                <button class="get-location-btn" id="getLocationBtn">
-                    📡 Get Current Location
-                </button>
-            </div>
+                <div class="input-group">
+                    <label for="locationName">Location Name</label>
+                    <input type="text" id="locationName" placeholder="e.g., Kakinada, Andhra Pradesh, India">
+                </div>
 
-            <div class="loading" id="loading">
-                <div class="spinner"></div>
-                <div>Getting location...</div>
-            </div>
+                <div class="input-group">
+                    <label for="fullAddress">Full Address</label>
+                    <textarea id="fullAddress" placeholder="70-17-18/2b, Ranga Rao Nagar, Siddharth Nagar, Kakinada, Andhra Pradesh 533003, India"></textarea>
+                </div>
 
-            <div class="location-info" id="locationInfo" style="display: none;">
-                <div class="location-row">
-                    <span class="location-label">Latitude:</span>
-                    <span class="location-value" id="latitude">-</span>
+                <div class="coord-row">
+                    <div class="input-group">
+                        <label for="latitude">Latitude</label>
+                        <input type="number" id="latitude" step="any" placeholder="16.983526">
+                    </div>
+                    <div class="input-group">
+                        <label for="longitude">Longitude</label>
+                        <input type="number" id="longitude" step="any" placeholder="82.252639">
+                    </div>
                 </div>
-                <div class="location-row">
-                    <span class="location-label">Longitude:</span>
-                    <span class="location-value" id="longitude">-</span>
-                </div>
-                <div class="location-row">
-                    <span class="location-label">Address:</span>
-                    <span class="location-value" id="address">-</span>
-                </div>
-                <div class="location-row">
-                    <span class="location-label">Accuracy:</span>
-                    <span class="location-value" id="accuracy">-</span>
-                </div>
-                <div class="location-row">
-                    <span class="location-label">Timestamp:</span>
-                    <span class="location-value" id="timestamp">-</span>
+
+                <div class="input-group">
+                    <label for="timestamp">Date & Time</label>
+                    <input type="datetime-local" id="timestamp">
                 </div>
             </div>
 
             <div class="photo-preview" id="photoPreview"></div>
             
-            <div class="download-section" id="downloadSection" style="display: none;">
-                <button class="download-btn" id="processBtn">
+            <div class="action-buttons" id="actionButtons" style="display: none;">
+                <button class="btn btn-process" id="processBtn">
                     🏷️ Add Location Tag
                 </button>
-                <button class="download-btn" id="downloadBtn" style="display: none;">
+                <button class="btn btn-download" id="downloadBtn" style="display: none;">
                     💾 Download Tagged Photo
                 </button>
             </div>
@@ -356,10 +429,10 @@
         </div>
 
         <div class="options-section">
-            <h3 style="margin-bottom: 1rem; color: #333;">📋 Tagging Options</h3>
+            <h3>📋 Overlay Customization</h3>
             
             <div class="option-group">
-                <label for="overlayPosition">Overlay Position:</label>
+                <label for="overlayPosition">Overlay Position</label>
                 <select id="overlayPosition">
                     <option value="bottom-left">Bottom Left</option>
                     <option value="bottom-right">Bottom Right</option>
@@ -369,144 +442,67 @@
             </div>
 
             <div class="option-group">
-                <label for="overlayColor">Text Color:</label>
-                <input type="color" id="overlayColor" value="#ffffff">
+                <label for="showMap">Show Map Thumbnail</label>
+                <select id="showMap">
+                    <option value="true">Yes</option>
+                    <option value="false">No</option>
+                </select>
             </div>
 
             <div class="option-group">
-                <label for="overlayBgColor">Background Color:</label>
-                <input type="color" id="overlayBgColor" value="#000000">
+                <label for="overlayOpacity">Background Opacity</label>
+                <input type="range" id="overlayOpacity" min="50" max="100" value="80">
+                <span class="range-value" id="overlayOpacityValue">80%</span>
             </div>
 
             <div class="option-group">
-                <label for="fontSize">Font Size:</label>
-                <input type="range" id="fontSize" min="12" max="48" value="16">
+                <label for="fontSize">Font Size</label>
+                <input type="range" id="fontSize" min="12" max="24" value="16">
                 <span class="range-value" id="fontSizeValue">16px</span>
-            </div>
-
-            <div class="option-group">
-                <label for="backgroundOpacity">Background Opacity:</label>
-                <input type="range" id="backgroundOpacity" min="0" max="100" value="70">
-                <span class="range-value" id="backgroundOpacityValue">70%</span>
             </div>
         </div>
     </div>
 
     <script>
-        let currentLocation = null;
         let currentPhoto = null;
         let processedCanvas = null;
 
         // Elements
         const photoInput = document.getElementById('photoInput');
-        const getLocationBtn = document.getElementById('getLocationBtn');
-        const loading = document.getElementById('loading');
-        const locationInfo = document.getElementById('locationInfo');
         const photoPreview = document.getElementById('photoPreview');
-        const downloadSection = document.getElementById('downloadSection');
+        const actionButtons = document.getElementById('actionButtons');
         const processBtn = document.getElementById('processBtn');
         const downloadBtn = document.getElementById('downloadBtn');
         const status = document.getElementById('status');
 
+        // Input elements
+        const locationName = document.getElementById('locationName');
+        const fullAddress = document.getElementById('fullAddress');
+        const latitude = document.getElementById('latitude');
+        const longitude = document.getElementById('longitude');
+        const timestamp = document.getElementById('timestamp');
+
         // Option elements
         const overlayPosition = document.getElementById('overlayPosition');
-        const overlayColor = document.getElementById('overlayColor');
-        const overlayBgColor = document.getElementById('overlayBgColor');
+        const showMap = document.getElementById('showMap');
+        const overlayOpacity = document.getElementById('overlayOpacity');
         const fontSize = document.getElementById('fontSize');
-        const backgroundOpacity = document.getElementById('backgroundOpacity');
         const fontSizeValue = document.getElementById('fontSizeValue');
-        const backgroundOpacityValue = document.getElementById('backgroundOpacityValue');
+        const overlayOpacityValue = document.getElementById('overlayOpacityValue');
+
+        // Set current date/time as default
+        const now = new Date();
+        now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+        timestamp.value = now.toISOString().slice(0, 16);
 
         // Update range value displays
         fontSize.addEventListener('input', () => {
             fontSizeValue.textContent = fontSize.value + 'px';
         });
 
-        backgroundOpacity.addEventListener('input', () => {
-            backgroundOpacityValue.textContent = backgroundOpacity.value + '%';
+        overlayOpacity.addEventListener('input', () => {
+            overlayOpacityValue.textContent = overlayOpacity.value + '%';
         });
-
-        // Get location functionality
-        getLocationBtn.addEventListener('click', async () => {
-            if (!navigator.geolocation) {
-                showStatus('Geolocation is not supported by this browser.', 'error');
-                return;
-            }
-
-            loading.style.display = 'block';
-            getLocationBtn.disabled = true;
-
-            const options = {
-                enableHighAccuracy: true,
-                timeout: 10000,
-                maximumAge: 0
-            };
-
-            navigator.geolocation.getCurrentPosition(
-                async (position) => {
-                    currentLocation = {
-                        latitude: position.coords.latitude,
-                        longitude: position.coords.longitude,
-                        accuracy: position.coords.accuracy,
-                        timestamp: new Date().toLocaleString()
-                    };
-
-                    // Try to get address from coordinates
-                    try {
-                        const address = await reverseGeocode(currentLocation.latitude, currentLocation.longitude);
-                        currentLocation.address = address;
-                    } catch (error) {
-                        currentLocation.address = 'Address unavailable';
-                    }
-
-                    displayLocationInfo();
-                    loading.style.display = 'none';
-                    getLocationBtn.disabled = false;
-                    showStatus('Location acquired successfully!', 'success');
-                },
-                (error) => {
-                    loading.style.display = 'none';
-                    getLocationBtn.disabled = false;
-                    let message = 'Error getting location: ';
-                    
-                    switch(error.code) {
-                        case error.PERMISSION_DENIED:
-                            message += 'Permission denied. Please allow location access.';
-                            break;
-                        case error.POSITION_UNAVAILABLE:
-                            message += 'Position unavailable.';
-                            break;
-                        case error.TIMEOUT:
-                            message += 'Request timeout.';
-                            break;
-                        default:
-                            message += 'Unknown error.';
-                    }
-                    
-                    showStatus(message, 'error');
-                },
-                options
-            );
-        });
-
-        // Simple reverse geocoding (using a mock service for demo)
-        async function reverseGeocode(lat, lng) {
-            // In a real app, you'd use a service like Google Maps, OpenStreetMap Nominatim, etc.
-            // For demo purposes, we'll return a formatted string
-            return `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
-        }
-
-        function displayLocationInfo() {
-            if (!currentLocation) return;
-
-            document.getElementById('latitude').textContent = currentLocation.latitude.toFixed(6);
-            document.getElementById('longitude').textContent = currentLocation.longitude.toFixed(6);
-            document.getElementById('address').textContent = currentLocation.address;
-            document.getElementById('accuracy').textContent = `±${Math.round(currentLocation.accuracy)}m`;
-            document.getElementById('timestamp').textContent = currentLocation.timestamp;
-
-            locationInfo.style.display = 'block';
-        }
 
         // Photo input handling
         photoInput.addEventListener('change', (event) => {
@@ -525,7 +521,7 @@
             if (!currentPhoto) return;
 
             photoPreview.innerHTML = `<img src="${currentPhoto}" alt="Selected photo">`;
-            downloadSection.style.display = 'flex';
+            actionButtons.style.display = 'grid';
             downloadBtn.style.display = 'none';
         }
 
@@ -536,13 +532,21 @@
                 return;
             }
 
-            if (!currentLocation) {
-                showStatus('Please get location first.', 'error');
+            if (!validateInputs()) {
+                showStatus('Please fill in all location fields.', 'error');
                 return;
             }
 
             processPhotoWithLocation();
         });
+
+        function validateInputs() {
+            return locationName.value.trim() && 
+                   fullAddress.value.trim() && 
+                   latitude.value && 
+                   longitude.value && 
+                   timestamp.value;
+        }
 
         function processPhotoWithLocation() {
             const img = new Image();
@@ -578,58 +582,147 @@
         function addLocationOverlay(ctx, width, height) {
             const fontSizeValue = parseInt(fontSize.value);
             const position = overlayPosition.value;
-            const textColor = overlayColor.value;
-            const bgColor = overlayBgColor.value;
-            const bgOpacity = backgroundOpacity.value / 100;
+            const opacity = overlayOpacity.value / 100;
+            const includeMap = showMap.value === 'true';
 
-            // Location text
-            const locationText = [
-                `📍 ${currentLocation.latitude.toFixed(6)}, ${currentLocation.longitude.toFixed(6)}`,
-                `🏠 ${currentLocation.address}`,
-                `📅 ${currentLocation.timestamp}`,
-                `🎯 ±${Math.round(currentLocation.accuracy)}m`
-            ];
+            // Format timestamp
+            const dateTime = new Date(timestamp.value);
+            const formattedDate = dateTime.toLocaleDateString('en-GB') + ' ' + 
+                                dateTime.toLocaleTimeString('en-US', { 
+                                    hour12: true,
+                                    timeZoneName: 'short'
+                                });
 
-            ctx.font = `${fontSizeValue}px Arial`;
-            ctx.textAlign = 'left';
+            // Calculate dimensions
+            const padding = 20;
+            const overlayPadding = 15;
+            const lineHeight = fontSizeValue * 1.4;
+            
+            // Estimate text dimensions
+            ctx.font = `600 ${Math.floor(fontSizeValue * 1.3)}px Arial`;
+            const locationWidth = ctx.measureText(locationName.value).width;
+            
+            ctx.font = `${Math.floor(fontSizeValue * 0.85)}px Arial`;
+            const addressWidth = ctx.measureText(fullAddress.value).width;
+            const coordsText = `Lat ${parseFloat(latitude.value).toFixed(6)}° Long ${parseFloat(longitude.value).toFixed(6)}°`;
+            const coordsWidth = ctx.measureText(coordsText).width;
+            const timestampWidth = ctx.measureText(formattedDate).width;
 
-            // Calculate text dimensions
-            const lineHeight = fontSizeValue * 1.2;
-            const maxWidth = Math.max(...locationText.map(text => ctx.measureText(text).width));
-            const textHeight = locationText.length * lineHeight;
+            const maxTextWidth = Math.max(locationWidth, addressWidth, coordsWidth, timestampWidth);
+            const overlayWidth = Math.min(maxTextWidth + overlayPadding * 2, width - padding * 2);
+            const overlayHeight = lineHeight * 4 + overlayPadding * 2;
+
+            // Map thumbnail dimensions
+            const mapWidth = includeMap ? 120 : 0;
+            const mapHeight = includeMap ? 80 : 0;
+            const totalWidth = Math.max(overlayWidth, mapWidth + overlayPadding);
 
             // Calculate position
             let x, y;
-            const padding = 20;
-
             switch (position) {
                 case 'top-left':
                     x = padding;
                     y = padding;
                     break;
                 case 'top-right':
-                    x = width - maxWidth - padding;
+                    x = width - totalWidth - padding;
                     y = padding;
                     break;
                 case 'bottom-left':
                     x = padding;
-                    y = height - textHeight - padding;
+                    y = height - overlayHeight - (includeMap ? mapHeight + 10 : 0) - padding;
                     break;
                 case 'bottom-right':
-                    x = width - maxWidth - padding;
-                    y = height - textHeight - padding;
+                    x = width - totalWidth - padding;
+                    y = height - overlayHeight - (includeMap ? mapHeight + 10 : 0) - padding;
                     break;
             }
 
-            // Draw background
-            ctx.fillStyle = `${bgColor}${Math.round(bgOpacity * 255).toString(16).padStart(2, '0')}`;
-            ctx.fillRect(x - 10, y - 10, maxWidth + 20, textHeight + 20);
+            // Draw overlay background
+            ctx.fillStyle = `rgba(0, 0, 0, ${opacity})`;
+            ctx.fillRect(x, y, overlayWidth, overlayHeight);
 
-            // Draw text
-            ctx.fillStyle = textColor;
-            locationText.forEach((text, index) => {
-                ctx.fillText(text, x, y + (index + 1) * lineHeight);
-            });
+            // Draw GPS icon background
+            const iconSize = 24;
+            const iconX = x + overlayPadding;
+            const iconY = y + overlayPadding;
+            
+            ctx.fillStyle = '#4285f4';
+            ctx.fillRect(iconX, iconY, iconSize, iconSize);
+            
+            // Draw GPS icon text
+            ctx.fillStyle = 'white';
+            ctx.font = `bold ${iconSize * 0.5}px Arial`;
+            ctx.textAlign = 'center';
+            ctx.fillText('📍', iconX + iconSize/2, iconY + iconSize * 0.7);
+
+            // Draw GPS Map Camera text
+            ctx.fillStyle = 'white';
+            ctx.font = `600 ${fontSizeValue}px Arial`;
+            ctx.textAlign = 'left';
+            ctx.fillText('GPS Map Camera', iconX + iconSize + 8, iconY + iconSize * 0.7);
+
+            // Draw location name (larger)
+            const locationY = y + overlayPadding + lineHeight * 1.8;
+            ctx.font = `600 ${Math.floor(fontSizeValue * 1.2)}px Arial`;
+            ctx.fillText(locationName.value, x + overlayPadding, locationY);
+
+            // Draw address
+            const addressY = locationY + lineHeight * 0.8;
+            ctx.font = `${Math.floor(fontSizeValue * 0.85)}px Arial`;
+            ctx.fillStyle = '#cccccc';
+            
+            // Wrap address text if too long
+            const words = fullAddress.value.split(' ');
+            let line = '';
+            let currentY = addressY;
+            const maxWidth = overlayWidth - overlayPadding * 2;
+            
+            for (let word of words) {
+                const testLine = line + word + ' ';
+                const metrics = ctx.measureText(testLine);
+                if (metrics.width > maxWidth && line !== '') {
+                    ctx.fillText(line.trim(), x + overlayPadding, currentY);
+                    line = word + ' ';
+                    currentY += lineHeight * 0.7;
+                } else {
+                    line = testLine;
+                }
+            }
+            ctx.fillText(line.trim(), x + overlayPadding, currentY);
+
+            // Draw coordinates
+            const coordsY = y + overlayHeight - lineHeight * 1.2;
+            ctx.fillText(coordsText, x + overlayPadding, coordsY);
+
+            // Draw timestamp
+            const timestampY = y + overlayHeight - lineHeight * 0.3;
+            ctx.fillText(formattedDate, x + overlayPadding, timestampY);
+
+            // Draw map placeholder
+            if (includeMap) {
+                const mapY = y + overlayHeight + 10;
+                
+                // Map background
+                ctx.fillStyle = '#f0f0f0';
+                ctx.fillRect(x, mapY, mapWidth, mapHeight);
+                
+                // Map border
+                ctx.strokeStyle = 'white';
+                ctx.lineWidth = 2;
+                ctx.strokeRect(x, mapY, mapWidth, mapHeight);
+                
+                // Map placeholder text
+                ctx.fillStyle = '#666666';
+                ctx.font = `${Math.floor(fontSizeValue * 0.75)}px Arial`;
+                ctx.textAlign = 'center';
+                ctx.fillText('Map Preview', x + mapWidth/2, mapY + mapHeight/2 + 4);
+                
+                // Google logo placeholder
+                ctx.fillStyle = '#4285f4';
+                ctx.font = `bold ${Math.floor(fontSizeValue * 0.6)}px Arial`;
+                ctx.fillText('Google', x + mapWidth/2, mapY + mapHeight - 8);
+            }
         }
 
         // Download functionality
@@ -663,9 +756,9 @@
             }, 5000);
         }
 
-        // Auto-get location on page load
+        // Welcome message
         window.addEventListener('load', () => {
-            showStatus('Welcome! Click "Get Current Location" to start geotagging photos.', 'info');
+            showStatus('Welcome! Fill in location details and select a photo to get started.', 'success');
         });
     </script>
 </body>
