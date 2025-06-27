@@ -194,11 +194,11 @@
             margin-top: 1rem;
         }
 
+       
         .video-overlay {
             position: absolute;
             bottom: 20px;
             left: 20px;
-            right: 20px;
             background: rgba(0, 0, 0, 0.8);
             color: white;
             padding: 15px;
@@ -208,8 +208,9 @@
             line-height: 1.4;
             backdrop-filter: blur(5px);
             pointer-events: none;
+            max-width: 80%;
         }
-
+    
         .overlay-header {
             display: flex;
             align-items: center;
@@ -217,7 +218,7 @@
             margin-bottom: 8px;
             font-weight: 600;
         }
-
+    
         .gps-icon {
             width: 24px;
             height: 24px;
@@ -229,30 +230,30 @@
             color: white;
             font-size: 12px;
         }
-
+    
         .location-main {
             font-size: 18px;
             font-weight: 600;
             margin-bottom: 4px;
         }
-
+    
         .location-address {
             font-size: 13px;
             color: #ccc;
             margin-bottom: 8px;
         }
-
+    
         .location-coords {
             font-size: 12px;
             color: #ccc;
             margin-bottom: 4px;
         }
-
+    
         .location-timestamp {
             font-size: 12px;
             color: #ccc;
         }
-
+    
         .map-placeholder {
             position: absolute;
             bottom: 15px;
@@ -268,8 +269,7 @@
             color: #666;
             border: 2px solid white;
             box-shadow: 0 2px 8px rgba(0,0,0,0.3);
-        }
-
+        }        
         .input-section {
             background: rgba(255, 255, 255, 0.9);
             border-radius: 15px;
@@ -977,16 +977,14 @@
                 });
             }
             
-            // Update overlay styling
-            videoOverlay.style.fontSize = fontSize.value + 'px';
-            videoOverlay.style.background = `rgba(0, 0, 0, ${overlayOpacity.value / 100})`;
-            
-            // Update position
-            const position = overlayPosition.value;
-            videoOverlay.style.top = position.includes('top') ? '20px' : 'auto';
-            videoOverlay.style.bottom = position.includes('bottom') ? '20px' : 'auto';
-            videoOverlay.style.left = position.includes('left') ? '20px' : 'auto';
-            videoOverlay.style.right = position.includes('right') ? '20px' : 'auto';
+            // Keep the overlay styling consistent
+            videoOverlay.style.fontSize = '14px';
+            videoOverlay.style.background = 'rgba(0, 0, 0, 0.8)';
+            videoOverlay.style.bottom = '20px';
+            videoOverlay.style.left = '20px';
+            videoOverlay.style.right = 'auto';
+            videoOverlay.style.top = 'auto';
+            videoOverlay.style.maxWidth = '80%';
             
             // Show/hide map thumbnail
             const mapPlaceholder = document.querySelector('.map-placeholder');
@@ -1000,7 +998,7 @@
                 showStatus('Camera not initialized.', 'error');
                 return;
             }
-
+        
             if (mediaRecorder && mediaRecorder.state === 'recording') {
                 // Stop recording
                 mediaRecorder.stop();
@@ -1012,9 +1010,37 @@
                 recordedChunks = [];
                 
                 try {
-                    mediaRecorder = new MediaRecorder(stream, {
+                    // Create a canvas to combine video and overlay
+                    const canvas = document.createElement('canvas');
+                    const ctx = canvas.getContext('2d');
+                    canvas.width = videoPreview.videoWidth;
+                    canvas.height = videoPreview.videoHeight;
+                    
+                    // Create a stream from the canvas
+                    const canvasStream = canvas.captureStream(30);
+                    
+                    // Combine audio from original stream
+                    const audioTrack = stream.getAudioTracks()[0];
+                    if (audioTrack) {
+                        canvasStream.addTrack(audioTrack);
+                    }
+                    
+                    mediaRecorder = new MediaRecorder(canvasStream, {
                         mimeType: 'video/webm;codecs=vp8,opus'
                     });
+                    
+                    // Draw frames to canvas
+                    function drawFrame() {
+                        if (mediaRecorder && mediaRecorder.state === 'recording') {
+                            // Draw video frame
+                            ctx.drawImage(videoPreview, 0, 0, canvas.width, canvas.height);
+                            
+                            // Draw overlay
+                            drawVideoOverlay(ctx, canvas.width, canvas.height);
+                            
+                            requestAnimationFrame(drawFrame);
+                        }
+                    }
                     
                     mediaRecorder.ondataavailable = (event) => {
                         if (event.data.size > 0) {
@@ -1040,6 +1066,8 @@
                     };
                     
                     mediaRecorder.start();
+                    drawFrame(); // Start drawing frames
+                    
                     recordBtn.textContent = '⏹️ Stop Recording';
                     recordBtn.classList.add('recording');
                     videoOverlay.style.display = 'block';
@@ -1051,6 +1079,41 @@
                 }
             }
         });
+        
+        // New function to draw overlay on video frames
+        function drawVideoOverlay(ctx, width, height) {
+            const overlay = videoOverlay;
+            const style = getComputedStyle(overlay);
+            
+            // Save current context state
+            ctx.save();
+            
+            // Position overlay
+            let x = parseInt(style.left) || 20;
+            let y = parseInt(style.top) || (height - overlay.offsetHeight - 20);
+            
+            // Draw overlay background
+            ctx.fillStyle = style.background;
+            ctx.beginPath();
+            ctx.roundRect(x, y, overlay.offsetWidth, overlay.offsetHeight, 8);
+            ctx.fill();
+            
+            // Draw overlay content (simplified version)
+            ctx.fillStyle = 'white';
+            ctx.font = style.font;
+            
+            // Draw each text element
+            const elements = overlay.querySelectorAll('div:not(.map-placeholder)');
+            elements.forEach(el => {
+                const elStyle = getComputedStyle(el);
+                ctx.fillStyle = elStyle.color;
+                ctx.font = elStyle.font;
+                ctx.fillText(el.textContent, x + 15, y + 15);
+            });
+            
+            // Restore context state
+            ctx.restore();
+        }
 
         toggleOverlayBtn.addEventListener('click', () => {
             overlayVisible = !overlayVisible;
