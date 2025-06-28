@@ -212,13 +212,7 @@
             await initCamera();
             updateStatus('Getting location...', 'warning');
             
-            // Load Google Maps API with proper async loading
-            if (GOOGLE_MAPS_API_KEY !== 'AIzaSyBxiP-VOE5ROHLNKnZRwJEYpbKtZmHtWa0') {
-                loadGoogleMapsAPI();
-            } else {
-                console.warn('Google Maps API key not configured. Map features will be limited.');
-                updateStatus('Map unavailable - API key needed', 'error');
-            }
+            loadGoogleMapsAPI();
             
             startLocationTracking();
             
