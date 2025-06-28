@@ -1,7 +1,7 @@
 // Initialize variables
 let cameraStream = null;
 let currentCamera = 'environment';
-let map;
+let map, thumbnailMap;
 let currentLocation = null;
 let photoData = [];
 let addressInfo = "Location not available";
@@ -15,11 +15,16 @@ const uploadBtn = document.getElementById('upload-btn');
 const toggleCameraBtn = document.getElementById('toggle-camera');
 const saveBtn = document.getElementById('save-btn');
 const overlayContainer = document.getElementById('overlay-container');
+const addressText = document.getElementById('address-text');
+const coordinatesText = document.getElementById('coordinates-text');
+const timeText = document.getElementById('time-text');
+const accuracyText = document.getElementById('accuracy-text');
+const mapThumbnail = document.getElementById('map-thumbnail');
 
 // Initialize the application
 async function initApp() {
     await initCamera();
-    initMap();
+    initThumbnailMap();
     startLocationTracking();
     
     // Set up event listeners
@@ -48,12 +53,19 @@ async function initCamera() {
     }
 }
 
-// Initialize map
-function initMap() {
-    map = L.map('map-container').setView([0, 0], 2);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-    }).addTo(map);
+// Initialize thumbnail map
+function initThumbnailMap() {
+    thumbnailMap = L.map(mapThumbnail, {
+        zoomControl: false,
+        attributionControl: false,
+        dragging: false,
+        doubleClickZoom: false,
+        boxZoom: false,
+        scrollWheelZoom: false,
+        tap: false
+    }).setView([0, 0], 2);
+    
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(thumbnailMap);
 }
 
 // Start tracking location
@@ -80,16 +92,16 @@ function startLocationTracking() {
                 }
                 
                 updateLocationOverlay();
-                updateMap();
+                updateThumbnailMap();
             },
             error => {
                 console.error("Geolocation error: ", error);
-                overlayContainer.textContent = "Location: Not available";
+                addressText.textContent = "Location: Not available";
             },
             { enableHighAccuracy: true, maximumAge: 10000 }
         );
     } else {
-        overlayContainer.textContent = "Geolocation is not supported by this browser.";
+        addressText.textContent = "Geolocation is not supported";
     }
 }
 
@@ -98,7 +110,11 @@ function formatAddress(data) {
     const addr = data.address;
     let parts = [];
     
-    if (addr.road) parts.push(addr.road);
+    if (addr.house_number && addr.road) {
+        parts.push(`${addr.house_number}, ${addr.road}`);
+    } else if (addr.road) {
+        parts.push(addr.road);
+    }
     if (addr.suburb) parts.push(addr.suburb);
     if (addr.city || addr.town || addr.village) parts.push(addr.city || addr.town || addr.village);
     if (addr.state) parts.push(addr.state);
@@ -111,30 +127,33 @@ function formatAddress(data) {
 function updateLocationOverlay() {
     if (currentLocation) {
         const dateStr = currentLocation.timestamp.toLocaleString();
-        overlayContainer.innerHTML = `
-            <div style="font-weight:bold; margin-bottom:5px;">${addressInfo}</div>
-            <div>Lat ${currentLocation.lat.toFixed(6)}° Long ${currentLocation.lng.toFixed(6)}°</div>
-            <div>${dateStr}</div>
-            <div>Accuracy: ${currentLocation.accuracy.toFixed(0)} meters</div>
-        `;
+        addressText.textContent = addressInfo;
+        coordinatesText.textContent = `Lat ${currentLocation.lat.toFixed(6)}° Long ${currentLocation.lng.toFixed(6)}°`;
+        timeText.textContent = dateStr;
+        accuracyText.textContent = `Accuracy: ${currentLocation.accuracy.toFixed(0)} meters`;
     }
 }
 
-// Update map position
-function updateMap() {
-    if (currentLocation && map) {
-        map.setView([currentLocation.lat, currentLocation.lng], 15);
+// Update thumbnail map position
+function updateThumbnailMap() {
+    if (currentLocation && thumbnailMap) {
+        thumbnailMap.setView([currentLocation.lat, currentLocation.lng], 15);
         
         // Clear previous markers
-        map.eachLayer(layer => {
+        thumbnailMap.eachLayer(layer => {
             if (layer instanceof L.Marker) {
-                map.removeLayer(layer);
+                thumbnailMap.removeLayer(layer);
             }
         });
         
         // Add new marker
-        L.marker([currentLocation.lat, currentLocation.lng]).addTo(map)
-            .bindPopup("Photo Location");
+        L.marker([currentLocation.lat, currentLocation.lng], {
+            icon: L.divIcon({
+                className: 'map-marker',
+                html: '📍',
+                iconSize: [24, 24]
+            })
+        }).addTo(thumbnailMap);
     }
 }
 
@@ -174,7 +193,7 @@ function addOverlayToCanvas(ctx) {
     const dateStr = new Date().toLocaleString();
     
     // Draw semi-transparent background for text
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
     const textHeight = 100;
     ctx.fillRect(0, canvas.height - textHeight, canvas.width, textHeight);
     
@@ -193,10 +212,37 @@ function addOverlayToCanvas(ctx) {
     let y = canvas.height - textHeight + 10;
     const lineHeight = 20;
     
-    lines.forEach(line => {
+    lines.forEach((line, i) => {
+        if (i === 0) {
+            ctx.font = 'bold 18px Arial';
+        } else {
+            ctx.font = '16px Arial';
+        }
         ctx.fillText(line, 10, y);
         y += lineHeight;
     });
+    
+    // Draw map thumbnail
+    if (thumbnailMap) {
+        // Create a temporary canvas for the map
+        const mapCanvas = document.createElement('canvas');
+        mapCanvas.width = 120;
+        mapCanvas.height = 80;
+        const mapCtx = mapCanvas.getContext('2d');
+        
+        // Get the map container and draw it
+        const mapContainer = thumbnailMap.getContainer();
+        const mapImage = new Image();
+        mapImage.onload = () => {
+            ctx.drawImage(mapImage, canvas.width - 130, 10, 120, 80);
+            
+            // Draw border around map
+            ctx.strokeStyle = 'white';
+            ctx.lineWidth = 2;
+            ctx.strokeRect(canvas.width - 130, 10, 120, 80);
+        };
+        mapImage.src = mapContainer.querySelector('canvas').toDataURL();
+    }
 }
 
 // Upload existing photo
