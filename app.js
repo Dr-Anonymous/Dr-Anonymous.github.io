@@ -211,7 +211,6 @@ async function captureAndSavePhoto() {
     }
 }
 
-// Add overlay information to the canvas
 async function addOverlayToCanvas(ctx) {
     if (!currentLocation) return;
     
@@ -248,65 +247,146 @@ async function addOverlayToCanvas(ctx) {
         y += lineHeight;
     });
     
-    // Draw map thumbnail if available
-    if (thumbnailMap && currentLocation) {
+    // Draw map thumbnail using static map image
+    if (currentLocation) {
         try {
-            // Create a temporary canvas for the map
-            const mapCanvas = document.createElement('canvas');
-            mapCanvas.width = 120;
-            mapCanvas.height = 80;
+            const mapWidth = 120;
+            const mapHeight = 80;
+            const zoom = 15;
             
-            // Use Leaflet's built-in method to render map to canvas
-            await new Promise((resolve) => {
-                // Force map redraw
-                thumbnailMap.invalidateSize();
-                
-                // Small delay to ensure rendering completes
-                setTimeout(() => {
-                    // Get all map layers
-                    const mapContainer = thumbnailMap.getContainer();
-                    const mapLayers = mapContainer.querySelectorAll('canvas');
+            // Create static map URL using OpenStreetMap tiles
+            const mapUrl = `https://api.mapbox.com/styles/v1/mapbox/streets-v11/static/pin-s+ff0000(${currentLocation.lng},${currentLocation.lat})/${currentLocation.lng},${currentLocation.lat},${zoom}/${mapWidth}x${mapHeight}?access_token=pk.eyJ1IjoibWFwYm94IiwiYSI6ImNpejY4NXVycTA2emYycXBndHRqcmZ3N3gifQ.rJcFIG214AriISLbB6B5aw`;
+            
+            // Fallback to a different static map service if Mapbox doesn't work
+            const fallbackMapUrl = `https://tile.openstreetmap.org/${zoom}/${Math.floor((currentLocation.lng + 180) / 360 * Math.pow(2, zoom))}/${Math.floor((1 - Math.log(Math.tan(currentLocation.lat * Math.PI / 180) + 1 / Math.cos(currentLocation.lat * Math.PI / 180)) / Math.PI) / 2 * Math.pow(2, zoom))}.png`;
+            
+            // Create and load map image
+            const mapImage = new Image();
+            mapImage.crossOrigin = 'anonymous';
+            
+            await new Promise((resolve, reject) => {
+                mapImage.onload = () => {
+                    // Draw the map image
+                    ctx.drawImage(mapImage, canvas.width - 130, 10, mapWidth, mapHeight);
                     
-                    // Draw each layer to our temporary canvas
-                    const mapCtx = mapCanvas.getContext('2d');
-                    mapLayers.forEach((layer, index) => {
-                        // Clear background for first layer
-                        if (index === 0) {
-                            mapCtx.fillStyle = '#e0e0e0';
-                            mapCtx.fillRect(0, 0, mapCanvas.width, mapCanvas.height);
-                        }
-                        mapCtx.drawImage(layer, 0, 0, mapCanvas.width, mapCanvas.height);
-                    });
-                    
-                    // Add marker manually since it might not be in canvas
-                    mapCtx.font = '20px Arial';
-                    mapCtx.fillText('📍', 
-                        (mapCanvas.width/2) - 10, 
-                        (mapCanvas.height/2) - 10);
-                    
-                    // Draw the composed map to our main canvas
-                    ctx.drawImage(mapCanvas, canvas.width - 130, 10, 120, 80);
+                    // Draw marker on top
+                    ctx.font = '20px Arial';
+                    ctx.fillStyle = '#ff0000';
+                    ctx.fillText('📍', canvas.width - 130 + (mapWidth/2) - 10, 10 + (mapHeight/2) - 10);
                     
                     // Draw border around map
                     ctx.strokeStyle = 'white';
                     ctx.lineWidth = 2;
-                    ctx.strokeRect(canvas.width - 130, 10, 120, 80);
+                    ctx.strokeRect(canvas.width - 130, 10, mapWidth, mapHeight);
                     
                     resolve();
-                }, 200); // Increased delay to ensure rendering
+                };
+                
+                mapImage.onerror = () => {
+                    // Fallback: Draw a more detailed map placeholder
+                    ctx.fillStyle = '#4a5568';
+                    ctx.fillRect(canvas.width - 130, 10, mapWidth, mapHeight);
+                    
+                    // Draw grid pattern to simulate map
+                    ctx.strokeStyle = '#718096';
+                    ctx.lineWidth = 1;
+                    for (let i = 0; i < mapWidth; i += 20) {
+                        ctx.beginPath();
+                        ctx.moveTo(canvas.width - 130 + i, 10);
+                        ctx.lineTo(canvas.width - 130 + i, 10 + mapHeight);
+                        ctx.stroke();
+                    }
+                    for (let i = 0; i < mapHeight; i += 20) {
+                        ctx.beginPath();
+                        ctx.moveTo(canvas.width - 130, 10 + i);
+                        ctx.lineTo(canvas.width - 130 + mapWidth, 10 + i);
+                        ctx.stroke();
+                    }
+                    
+                    // Draw location marker
+                    ctx.fillStyle = '#ff0000';
+                    ctx.font = '20px Arial';
+                    ctx.fillText('📍', canvas.width - 130 + (mapWidth/2) - 10, 10 + (mapHeight/2) - 10);
+                    
+                    // Draw coordinates as fallback
+                    ctx.fillStyle = 'white';
+                    ctx.font = '10px Arial';
+                    ctx.fillText(`${currentLocation.lat.toFixed(2)}, ${currentLocation.lng.toFixed(2)}`, 
+                                canvas.width - 125, 25);
+                    
+                    // Draw border
+                    ctx.strokeStyle = 'white';
+                    ctx.lineWidth = 2;
+                    ctx.strokeRect(canvas.width - 130, 10, mapWidth, mapHeight);
+                    
+                    resolve();
+                };
+                
+                // Try to load the map image
+                mapImage.src = mapUrl;
             });
+            
         } catch (error) {
             console.error("Error rendering map thumbnail:", error);
-            // Fallback: Draw simple map placeholder
-            ctx.fillStyle = '#e0e0e0';
-            ctx.fillRect(canvas.width - 130, 10, 120, 80);
-            ctx.fillStyle = '#333';
-            ctx.font = '12px Arial';
-            ctx.fillText('Map', canvas.width - 80, 50);
-            ctx.strokeStyle = 'white';
-            ctx.strokeRect(canvas.width - 130, 10, 120, 80);
+            // Enhanced fallback
+            drawMapFallback(ctx, canvas);
         }
     }
+}
+
+// Enhanced fallback map drawing function
+function drawMapFallback(ctx, canvas) {
+    const mapWidth = 120;
+    const mapHeight = 80;
+    const x = canvas.width - 130;
+    const y = 10;
+    
+    // Draw background
+    ctx.fillStyle = '#e2e8f0';
+    ctx.fillRect(x, y, mapWidth, mapHeight);
+    
+    // Draw some roads/paths
+    ctx.strokeStyle = '#cbd5e0';
+    ctx.lineWidth = 2;
+    
+    // Horizontal roads
+    ctx.beginPath();
+    ctx.moveTo(x, y + 25);
+    ctx.lineTo(x + mapWidth, y + 25);
+    ctx.moveTo(x, y + 55);
+    ctx.lineTo(x + mapWidth, y + 55);
+    ctx.stroke();
+    
+    // Vertical roads
+    ctx.beginPath();
+    ctx.moveTo(x + 30, y);
+    ctx.lineTo(x + 30, y + mapHeight);
+    ctx.moveTo(x + 90, y);
+    ctx.lineTo(x + 90, y + mapHeight);
+    ctx.stroke();
+    
+    // Draw some building blocks
+    ctx.fillStyle = '#a0aec0';
+    ctx.fillRect(x + 10, y + 10, 15, 10);
+    ctx.fillRect(x + 45, y + 35, 20, 15);
+    ctx.fillRect(x + 75, y + 15, 12, 8);
+    ctx.fillRect(x + 35, y + 60, 18, 12);
+    
+    // Draw location marker
+    ctx.fillStyle = '#e53e3e';
+    ctx.font = 'bold 24px Arial';
+    ctx.fillText('📍', x + (mapWidth/2) - 12, y + (mapHeight/2) + 8);
+    
+    // Draw coordinates
+    ctx.fillStyle = '#2d3748';
+    ctx.font = 'bold 9px Arial';
+    ctx.fillText(`${currentLocation.lat.toFixed(3)}, ${currentLocation.lng.toFixed(3)}`, 
+                x + 5, y + mapHeight - 5);
+    
+    // Draw border
+    ctx.strokeStyle = 'white';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(x, y, mapWidth, mapHeight);
 }
 
 // Save photo to device
