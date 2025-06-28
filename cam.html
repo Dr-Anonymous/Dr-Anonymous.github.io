@@ -1,82 +1,73 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Fake Geotagging Camera</title>
-  <style>
-    body {
-      font-family: sans-serif;
-      text-align: center;
-      background: #121212;
-      color: white;
-      padding: 20px;
-    }
-    input[type="file"] {
-      margin-bottom: 20px;
-    }
-    canvas {
-      max-width: 100%;
-      border: 1px solid #444;
-      margin-top: 20px;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GPS Map Camera Web</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+        #app-container {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+        #camera-container {
+            flex: 1;
+            position: relative;
+            overflow: hidden;
+        }
+        #map-container {
+            height: 200px;
+            border-top: 2px solid #333;
+        }
+        #controls {
+            padding: 10px;
+            background: #f0f0f0;
+            display: flex;
+            justify-content: space-around;
+        }
+        button {
+            padding: 10px 15px;
+            background: #4285f4;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        #overlay-text {
+            position: absolute;
+            bottom: 10px;
+            left: 10px;
+            color: white;
+            background: rgba(0,0,0,0.5);
+            padding: 5px;
+            font-size: 14px;
+        }
+    </style>
 </head>
 <body>
-  <h1>📷 Fake Geotagging Camera</h1>
-  <p>Select an image to add a fake location overlay:</p>
-  <input type="file" accept="image/*" id="upload">
-  <br />
-  <canvas id="canvas"></canvas>
+    <div id="app-container">
+        <div id="camera-container">
+            <video id="camera-view" autoplay playsinline></video>
+            <canvas id="photo-canvas" style="display:none;"></canvas>
+            <img id="photo-result" style="display:none; width:100%; height:auto;">
+            <div id="overlay-text"></div>
+        </div>
+        <div id="map-container"></div>
+        <div id="controls">
+            <button id="capture-btn">Capture Photo</button>
+            <button id="upload-btn">Upload Photo</button>
+            <button id="toggle-camera">Switch Camera</button>
+            <button id="save-btn">Save Photo</button>
+        </div>
+    </div>
 
-  <script>
-    const upload = document.getElementById('upload');
-    const canvas = document.getElementById('canvas');
-    const ctx = canvas.getContext('2d');
-
-    upload.addEventListener('change', (e) => {
-      const file = e.target.files[0];
-      if (!file) return;
-
-      const reader = new FileReader();
-      reader.onload = function (event) {
-        const img = new Image();
-        img.onload = function () {
-          canvas.width = img.width;
-          canvas.height = img.height;
-          ctx.drawImage(img, 0, 0);
-
-          // Dark overlay box
-          ctx.fillStyle = "rgba(0, 0, 0, 0.7)";
-          ctx.fillRect(20, img.height - 160, 750, 140);
-
-          // Red Pin
-          ctx.beginPath();
-          ctx.arc(50, img.height - 120, 8, 0, 2 * Math.PI);
-          ctx.fillStyle = "red";
-          ctx.fill();
-
-          // Location text
-          ctx.fillStyle = "white";
-          ctx.font = "20px sans-serif";
-          ctx.fillText("Kakinada, Andhra Pradesh, India", 80, img.height - 130);
-
-          ctx.font = "16px sans-serif";
-          ctx.fillText("3-16-185/2, Sri Vidya Colony, Kannaya Kapu Nagar, Kotha", 80, img.height - 105);
-          ctx.fillText("Kakinada, Kakinada, Andhra Pradesh 533003, India", 80, img.height - 85);
-          ctx.fillText("Lat 16.972638° Long 82.248641°", 80, img.height - 65);
-          ctx.fillText("27/06/2025 11:18 AM GMT +05:30", 80, img.height - 45);
-
-          // GPS Map Camera label
-          ctx.fillStyle = "white";
-          ctx.fillRect(610, img.height - 180, 150, 26);
-          ctx.fillStyle = "#004aad";
-          ctx.font = "bold 14px sans-serif";
-          ctx.fillText("📷 GPS Map Camera", 615, img.height - 162);
-        };
-        img.src = event.target.result;
-      };
-      reader.readAsDataURL(file);
-    });
-  </script>
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+    <script src="app.js"></script>
 </body>
 </html>
