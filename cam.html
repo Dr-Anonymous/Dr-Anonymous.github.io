@@ -104,6 +104,19 @@
             font-weight: bold;
             margin-bottom: 8px;
         }
+        #saving-indicator {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0,0,0,0.7);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+            display: none;
+            z-index: 200;
+        }
         @media (min-width: 768px) {
             #controls {
                 bottom: 20px;
@@ -138,8 +151,8 @@
             <button id="toggle-camera" title="Switch Camera">🔄</button>
             <button id="capture-btn" title="Capture">📷</button>
             <button id="upload-btn" title="Upload">📁</button>
-            <button id="save-btn" title="Save">💾</button>
         </div>
+        <div id="saving-indicator">Saving photo...</div>
     </div>
 
     <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
