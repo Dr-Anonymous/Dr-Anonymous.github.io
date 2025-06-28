@@ -249,33 +249,62 @@ async function addOverlayToCanvas(ctx) {
     });
     
     // Draw map thumbnail if available
-    if (thumbnailMap) {
+    if (thumbnailMap && currentLocation) {
         try {
             // Create a temporary canvas for the map
             const mapCanvas = document.createElement('canvas');
             mapCanvas.width = 120;
             mapCanvas.height = 80;
-            const mapCtx = mapCanvas.getContext('2d');
             
-            // Get the map container
-            const mapContainer = thumbnailMap.getContainer();
-            const mapLayers = mapContainer.querySelectorAll('canvas');
-            
-            // Draw each map layer to our temporary canvas
-            mapLayers.forEach(layer => {
-                mapCtx.drawImage(layer, 0, 0, mapCanvas.width, mapCanvas.height);
+            // Use Leaflet's built-in method to render map to canvas
+            await new Promise((resolve) => {
+                // Force map redraw
+                thumbnailMap.invalidateSize();
+                
+                // Small delay to ensure rendering completes
+                setTimeout(() => {
+                    // Get all map layers
+                    const mapContainer = thumbnailMap.getContainer();
+                    const mapLayers = mapContainer.querySelectorAll('canvas');
+                    
+                    // Draw each layer to our temporary canvas
+                    const mapCtx = mapCanvas.getContext('2d');
+                    mapLayers.forEach((layer, index) => {
+                        // Clear background for first layer
+                        if (index === 0) {
+                            mapCtx.fillStyle = '#e0e0e0';
+                            mapCtx.fillRect(0, 0, mapCanvas.width, mapCanvas.height);
+                        }
+                        mapCtx.drawImage(layer, 0, 0, mapCanvas.width, mapCanvas.height);
+                    });
+                    
+                    // Add marker manually since it might not be in canvas
+                    mapCtx.font = '20px Arial';
+                    mapCtx.fillText('📍', 
+                        (mapCanvas.width/2) - 10, 
+                        (mapCanvas.height/2) - 10);
+                    
+                    // Draw the composed map to our main canvas
+                    ctx.drawImage(mapCanvas, canvas.width - 130, 10, 120, 80);
+                    
+                    // Draw border around map
+                    ctx.strokeStyle = 'white';
+                    ctx.lineWidth = 2;
+                    ctx.strokeRect(canvas.width - 130, 10, 120, 80);
+                    
+                    resolve();
+                }, 200); // Increased delay to ensure rendering
             });
-            
-            // Draw the composed map to our main canvas
-            ctx.drawImage(mapCanvas, canvas.width - 130, 10, 120, 80);
-            
-            // Draw border around map
-            ctx.strokeStyle = 'white';
-            ctx.lineWidth = 2;
-            ctx.strokeRect(canvas.width - 130, 10, 120, 80);
-            
         } catch (error) {
             console.error("Error rendering map thumbnail:", error);
+            // Fallback: Draw simple map placeholder
+            ctx.fillStyle = '#e0e0e0';
+            ctx.fillRect(canvas.width - 130, 10, 120, 80);
+            ctx.fillStyle = '#333';
+            ctx.font = '12px Arial';
+            ctx.fillText('Map', canvas.width - 80, 50);
+            ctx.strokeStyle = 'white';
+            ctx.strokeRect(canvas.width - 130, 10, 120, 80);
         }
     }
 }
