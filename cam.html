@@ -17,11 +17,13 @@
             overflow: hidden;
             background: #000;
             color: white;
+            -webkit-tap-highlight-color: transparent;
         }
         #app-container {
             display: flex;
             flex-direction: column;
             height: 100%;
+            position: relative;
         }
         #camera-container {
             flex: 1;
@@ -34,23 +36,19 @@
             height: 100%;
             object-fit: cover;
         }
-        #map-container {
-            height: 25vh;
-            border-top: 1px solid #444;
-        }
         #controls {
             padding: 10px;
             background: rgba(0,0,0,0.7);
             display: flex;
             justify-content: space-around;
-            position: absolute;
+            position: fixed;
             bottom: 0;
             left: 0;
             right: 0;
             z-index: 100;
         }
         button {
-            padding: 12px;
+            padding: 0;
             background: rgba(255,255,255,0.2);
             color: white;
             border: none;
@@ -59,7 +57,10 @@
             height: 50px;
             cursor: pointer;
             margin: 0 5px;
-            font-size: 12px;
+            font-size: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
         #capture-btn {
             background: #fff;
@@ -67,6 +68,7 @@
             width: 60px;
             height: 60px;
             border-radius: 50%;
+            font-size: 24px;
         }
         #overlay-container {
             position: absolute;
@@ -74,33 +76,46 @@
             left: 10px;
             right: 10px;
             color: white;
-            background: rgba(0,0,0,0.5);
+            background: rgba(0,0,0,0.7);
             padding: 10px;
-            border-radius: 5px;
+            border-radius: 8px;
             font-size: 14px;
             line-height: 1.4;
+            backdrop-filter: blur(2px);
+        }
+        #map-thumbnail {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            width: 120px;
+            height: 80px;
+            border-radius: 8px;
+            border: 2px solid white;
+            overflow: hidden;
+            z-index: 10;
         }
         #photo-canvas {
             display: none;
         }
+        .overlay-text {
+            margin-bottom: 5px;
+        }
+        .address-line {
+            font-weight: bold;
+            margin-bottom: 8px;
+        }
         @media (min-width: 768px) {
-            #app-container {
-                flex-direction: row;
-            }
-            #camera-container {
-                width: 70%;
-            }
-            #map-container {
-                width: 30%;
-                height: 100%;
-            }
             #controls {
-                position: fixed;
                 bottom: 20px;
                 left: 50%;
                 transform: translateX(-50%);
                 width: auto;
                 background: transparent;
+                border-radius: 30px;
+            }
+            #map-thumbnail {
+                width: 150px;
+                height: 100px;
             }
         }
     </style>
@@ -111,14 +126,19 @@
             <video id="camera-view" autoplay playsinline></video>
             <canvas id="photo-canvas"></canvas>
             <img id="photo-result" style="display:none;">
-            <div id="overlay-container"></div>
+            <div id="overlay-container">
+                <div class="address-line" id="address-text"></div>
+                <div class="overlay-text" id="coordinates-text"></div>
+                <div class="overlay-text" id="time-text"></div>
+                <div class="overlay-text" id="accuracy-text"></div>
+            </div>
+            <div id="map-thumbnail"></div>
         </div>
-        <div id="map-container"></div>
         <div id="controls">
-            <button id="toggle-camera" title="Switch Camera">↻</button>
+            <button id="toggle-camera" title="Switch Camera">🔄</button>
             <button id="capture-btn" title="Capture">📷</button>
-            <button id="upload-btn" title="Upload">↑</button>
-            <button id="save-btn" title="Save">↓</button>
+            <button id="upload-btn" title="Upload">📁</button>
+            <button id="save-btn" title="Save">💾</button>
         </div>
     </div>
 
