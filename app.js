@@ -1,7 +1,7 @@
 // Initialize variables
 let cameraStream = null;
 let currentCamera = 'environment';
-let map, thumbnailMap;
+let thumbnailMap;
 let currentLocation = null;
 let photoData = [];
 let addressInfo = "Location not available";
@@ -13,13 +13,13 @@ const photoResult = document.getElementById('photo-result');
 const captureBtn = document.getElementById('capture-btn');
 const uploadBtn = document.getElementById('upload-btn');
 const toggleCameraBtn = document.getElementById('toggle-camera');
-const saveBtn = document.getElementById('save-btn');
 const overlayContainer = document.getElementById('overlay-container');
 const addressText = document.getElementById('address-text');
 const coordinatesText = document.getElementById('coordinates-text');
 const timeText = document.getElementById('time-text');
 const accuracyText = document.getElementById('accuracy-text');
 const mapThumbnail = document.getElementById('map-thumbnail');
+const savingIndicator = document.getElementById('saving-indicator');
 
 // Initialize the application
 async function initApp() {
@@ -28,10 +28,9 @@ async function initApp() {
     startLocationTracking();
     
     // Set up event listeners
-    captureBtn.addEventListener('click', capturePhoto);
+    captureBtn.addEventListener('click', captureAndSavePhoto);
     uploadBtn.addEventListener('click', uploadPhoto);
     toggleCameraBtn.addEventListener('click', toggleCamera);
-    saveBtn.addEventListener('click', savePhoto);
 }
 
 // Initialize camera
@@ -157,36 +156,63 @@ function updateThumbnailMap() {
     }
 }
 
-// Capture photo from camera
-function capturePhoto() {
+// Capture and save photo
+async function captureAndSavePhoto() {
     if (!cameraStream) return;
     
-    const context = photoCanvas.getContext('2d');
-    photoCanvas.width = cameraView.videoWidth;
-    photoCanvas.height = cameraView.videoHeight;
-    
-    // Draw camera view to canvas
-    context.drawImage(cameraView, 0, 0, photoCanvas.width, photoCanvas.height);
-    
-    // Add overlay to the canvas
-    addOverlayToCanvas(context);
-    
-    // Display the captured photo
-    photoResult.src = photoCanvas.toDataURL('image/jpeg');
-    photoResult.style.display = 'block';
-    cameraView.style.display = 'none';
-    
-    // Store photo data
-    photoData.push({
-        imageData: photoCanvas.toDataURL('image/jpeg'),
-        location: currentLocation,
-        address: addressInfo,
-        timestamp: new Date()
-    });
+    try {
+        // Show saving indicator
+        savingIndicator.style.display = 'block';
+        
+        const context = photoCanvas.getContext('2d');
+        photoCanvas.width = cameraView.videoWidth;
+        photoCanvas.height = cameraView.videoHeight;
+        
+        // Draw camera view to canvas
+        context.drawImage(cameraView, 0, 0, photoCanvas.width, photoCanvas.height);
+        
+        // Add overlay to the canvas
+        await addOverlayToCanvas(context);
+        
+        // Create filename with timestamp
+        const dateStr = new Date().toISOString()
+            .replace(/[:.]/g, '-')
+            .replace('T', '_')
+            .substring(0, 19);
+        
+        // Save the photo automatically
+        const imageData = photoCanvas.toDataURL('image/jpeg');
+        savePhotoToDevice(imageData, `geo_photo_${dateStr}.jpg`);
+        
+        // Store photo data
+        photoData.push({
+            imageData: imageData,
+            location: currentLocation,
+            address: addressInfo,
+            timestamp: new Date()
+        });
+        
+        // Briefly show the captured photo
+        photoResult.src = imageData;
+        photoResult.style.display = 'block';
+        cameraView.style.display = 'none';
+        
+        // Hide after 1 second
+        setTimeout(() => {
+            photoResult.style.display = 'none';
+            cameraView.style.display = 'block';
+        }, 1000);
+        
+    } catch (error) {
+        console.error("Error capturing/saving photo:", error);
+        alert("Error saving photo. Please try again.");
+    } finally {
+        savingIndicator.style.display = 'none';
+    }
 }
 
 // Add overlay information to the canvas
-function addOverlayToCanvas(ctx) {
+async function addOverlayToCanvas(ctx) {
     if (!currentLocation) return;
     
     const canvas = ctx.canvas;
@@ -222,27 +248,46 @@ function addOverlayToCanvas(ctx) {
         y += lineHeight;
     });
     
-    // Draw map thumbnail
+    // Draw map thumbnail if available
     if (thumbnailMap) {
-        // Create a temporary canvas for the map
-        const mapCanvas = document.createElement('canvas');
-        mapCanvas.width = 120;
-        mapCanvas.height = 80;
-        const mapCtx = mapCanvas.getContext('2d');
-        
-        // Get the map container and draw it
-        const mapContainer = thumbnailMap.getContainer();
-        const mapImage = new Image();
-        mapImage.onload = () => {
-            ctx.drawImage(mapImage, canvas.width - 130, 10, 120, 80);
+        try {
+            // Create a temporary canvas for the map
+            const mapCanvas = document.createElement('canvas');
+            mapCanvas.width = 120;
+            mapCanvas.height = 80;
+            const mapCtx = mapCanvas.getContext('2d');
+            
+            // Get the map container
+            const mapContainer = thumbnailMap.getContainer();
+            const mapLayers = mapContainer.querySelectorAll('canvas');
+            
+            // Draw each map layer to our temporary canvas
+            mapLayers.forEach(layer => {
+                mapCtx.drawImage(layer, 0, 0, mapCanvas.width, mapCanvas.height);
+            });
+            
+            // Draw the composed map to our main canvas
+            ctx.drawImage(mapCanvas, canvas.width - 130, 10, 120, 80);
             
             // Draw border around map
             ctx.strokeStyle = 'white';
             ctx.lineWidth = 2;
             ctx.strokeRect(canvas.width - 130, 10, 120, 80);
-        };
-        mapImage.src = mapContainer.querySelector('canvas').toDataURL();
+            
+        } catch (error) {
+            console.error("Error rendering map thumbnail:", error);
+        }
     }
+}
+
+// Save photo to device
+function savePhotoToDevice(dataUrl, fileName) {
+    const link = document.createElement('a');
+    link.download = fileName;
+    link.href = dataUrl;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
 }
 
 // Upload existing photo
@@ -270,14 +315,13 @@ function uploadPhoto() {
                     // Add overlay
                     addOverlayToCanvas(ctx);
                     
-                    // Display the result
-                    photoResult.src = photoCanvas.toDataURL('image/jpeg');
-                    photoResult.style.display = 'block';
-                    cameraView.style.display = 'none';
+                    // Save the photo automatically
+                    const imageData = photoCanvas.toDataURL('image/jpeg');
+                    savePhotoToDevice(imageData, `geo_upload_${new Date().getTime()}.jpg`);
                     
                     // Store photo data
                     photoData.push({
-                        imageData: photoCanvas.toDataURL('image/jpeg'),
+                        imageData: imageData,
                         location: currentLocation,
                         address: addressInfo,
                         timestamp: new Date()
@@ -305,24 +349,6 @@ async function toggleCamera() {
         photoResult.style.display = 'none';
         cameraView.style.display = 'block';
     }
-}
-
-// Save photo with geotag
-function savePhoto() {
-    if (photoData.length === 0) return;
-    
-    const latestPhoto = photoData[photoData.length - 1];
-    const link = document.createElement('a');
-    
-    // Create a filename with timestamp
-    const dateStr = new Date().toISOString()
-        .replace(/[:.]/g, '-')
-        .replace('T', '_')
-        .substring(0, 19);
-    
-    link.download = `geo_photo_${dateStr}.jpg`;
-    link.href = latestPhoto.imageData;
-    link.click();
 }
 
 // Initialize the app when DOM is loaded
