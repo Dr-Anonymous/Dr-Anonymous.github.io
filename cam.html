@@ -116,6 +116,26 @@
             display: none;
             z-index: 200;
         }
+        .status-indicator {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: rgba(0,0,0,0.7);
+            color: white;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            z-index: 15;
+        }
+        .status-indicator.success {
+            background: rgba(16, 185, 129, 0.8);
+        }
+        .status-indicator.warning {
+            background: rgba(245, 158, 11, 0.8);
+        }
+        .status-indicator.error {
+            background: rgba(239, 68, 68, 0.8);
+        }
         @media (min-width: 768px) {
             #controls {
                 bottom: 20px;
@@ -138,8 +158,9 @@
             <video id="camera-view" autoplay playsinline></video>
             <canvas id="photo-canvas"></canvas>
             <img id="photo-result" style="display:none;">
+            <div class="status-indicator" id="status-indicator">Getting location...</div>
             <div id="overlay-container">
-                <div class="address-line" id="address-text"></div>
+                <div class="address-line" id="address-text">Getting location...</div>
                 <div class="overlay-text" id="coordinates-text"></div>
                 <div class="overlay-text" id="time-text"></div>
                 <div class="overlay-text" id="accuracy-text"></div>
@@ -162,8 +183,12 @@
         let marker;
         let currentLocation = null;
         let photoData = [];
-        let addressInfo = "Location not available";
-        const GOOGLE_MAPS_API_KEY = 'AIzaSyBxiP-VOE5ROHLNKnZRwJEYpbKtZmHtWa0';
+        let addressInfo = "Getting location...";
+        let locationStatus = 'getting'; // 'getting', 'success', 'error'
+
+        // Note: In production, store API keys securely on your server
+        // This is for demo purposes only
+        const GOOGLE_MAPS_API_KEY = 'AIzaSyBxiP-VOE5ROHLNKnZRwJEYpbKtZmHtWa0'; // Replace with your actual API key
 
         // DOM Elements
         const cameraView = document.getElementById('camera-view');
@@ -179,11 +204,22 @@
         const accuracyText = document.getElementById('accuracy-text');
         const mapThumbnail = document.getElementById('map-thumbnail');
         const savingIndicator = document.getElementById('saving-indicator');
+        const statusIndicator = document.getElementById('status-indicator');
 
         // Initialize the application
         async function initApp() {
+            updateStatus('Getting camera access...', 'warning');
             await initCamera();
-            loadGoogleMapsAPI();
+            updateStatus('Getting location...', 'warning');
+            
+            // Load Google Maps API with proper async loading
+            if (GOOGLE_MAPS_API_KEY !== 'AIzaSyBxiP-VOE5ROHLNKnZRwJEYpbKtZmHtWa0') {
+                loadGoogleMapsAPI();
+            } else {
+                console.warn('Google Maps API key not configured. Map features will be limited.');
+                updateStatus('Map unavailable - API key needed', 'error');
+            }
+            
             startLocationTracking();
             
             // Set up event listeners
@@ -192,43 +228,83 @@
             toggleCameraBtn.addEventListener('click', toggleCamera);
         }
 
-        // Load Google Maps API
+        // Update status indicator
+        function updateStatus(message, type = 'warning') {
+            statusIndicator.textContent = message;
+            statusIndicator.className = `status-indicator ${type}`;
+            
+            if (type === 'success') {
+                setTimeout(() => {
+                    statusIndicator.style.opacity = '0.7';
+                }, 2000);
+            }
+        }
+
+        // Load Google Maps API with proper async loading
         function loadGoogleMapsAPI() {
-            const script = document.createElement('script');
-            script.src = `https://maps.googleapis.com/maps/api/js?key=${GOOGLE_MAPS_API_KEY}&callback=initMap`;
-            script.async = true;
-            script.defer = true;
-            document.head.appendChild(script);
+            return new Promise((resolve, reject) => {
+                // Check if Google Maps is already loaded
+                if (window.google && window.google.maps) {
+                    initMap();
+                    resolve();
+                    return;
+                }
+
+                // Set up the callback
+                window.initMapCallback = () => {
+                    initMap();
+                    resolve();
+                };
+
+                const script = document.createElement('script');
+                script.src = `https://maps.googleapis.com/maps/api/js?key=${GOOGLE_MAPS_API_KEY}&callback=initMapCallback&loading=async`;
+                script.async = true;
+                script.defer = true;
+                script.onerror = () => {
+                    console.error('Failed to load Google Maps API');
+                    updateStatus('Map unavailable', 'error');
+                    reject(new Error('Failed to load Google Maps API'));
+                };
+                
+                document.head.appendChild(script);
+            });
         }
 
         // Initialize Google Map
         function initMap() {
-            map = new google.maps.Map(mapThumbnail, {
-                zoom: 15,
-                center: { lat: 0, lng: 0 },
-                disableDefaultUI: true,
-                zoomControl: false,
-                mapTypeControl: false,
-                scaleControl: false,
-                streetViewControl: false,
-                rotateControl: false,
-                fullscreenControl: false,
-                gestureHandling: 'none'
-            });
+            try {
+                map = new google.maps.Map(mapThumbnail, {
+                    zoom: 15,
+                    center: { lat: 16.9834, lng: 82.2527 }, // Default to Kakinada area
+                    disableDefaultUI: true,
+                    zoomControl: false,
+                    mapTypeControl: false,
+                    scaleControl: false,
+                    streetViewControl: false,
+                    rotateControl: false,
+                    fullscreenControl: false,
+                    gestureHandling: 'none'
+                });
 
-            marker = new google.maps.Marker({
-                position: { lat: 0, lng: 0 },
-                map: map,
-                icon: {
-                    url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" fill="#ff0000"/>
-                        </svg>
-                    `),
-                    scaledSize: new google.maps.Size(24, 24),
-                    anchor: new google.maps.Point(12, 24)
-                }
-            });
+                marker = new google.maps.Marker({
+                    position: { lat: 16.9834, lng: 82.2527 },
+                    map: map,
+                    icon: {
+                        url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" fill="#ff0000"/>
+                            </svg>
+                        `),
+                        scaledSize: new google.maps.Size(24, 24),
+                        anchor: new google.maps.Point(12, 24)
+                    }
+                });
+                
+                console.log('Google Maps initialized successfully');
+            } catch (error) {
+                console.error('Error initializing Google Maps:', error);
+                updateStatus('Map initialization failed', 'error');
+            }
         }
 
         // Initialize camera
@@ -244,60 +320,136 @@
                 
                 cameraStream = await navigator.mediaDevices.getUserMedia(constraints);
                 cameraView.srcObject = cameraStream;
+                updateStatus('Camera ready', 'success');
             } catch (err) {
                 console.error("Camera error: ", err);
-                alert("Could not access the camera. Please check permissions.");
+                updateStatus('Camera access denied', 'error');
+                alert("Could not access the camera. Please check permissions and try again.");
             }
         }
 
         // Start tracking location
         function startLocationTracking() {
-            if (navigator.geolocation) {
-                navigator.geolocation.watchPosition(
-                    async position => {
-                        currentLocation = {
-                            lat: position.coords.latitude,
-                            lng: position.coords.longitude,
-                            accuracy: position.coords.accuracy,
-                            timestamp: new Date(position.timestamp)
-                        };
-                        
-                        // Try to get address information using Google Geocoding
-                        try {
-                            const response = await fetch(`https://maps.googleapis.com/maps/api/geocode/json?latlng=${currentLocation.lat},${currentLocation.lng}&key=${GOOGLE_MAPS_API_KEY}`);
-                            const data = await response.json();
-                            if (data.results && data.results.length > 0) {
-                                addressInfo = data.results[0].formatted_address;
-                            }
-                        } catch (e) {
-                            console.error("Geocoding error:", e);
-                            // Fallback to OpenStreetMap
-                            try {
-                                const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${currentLocation.lat}&lon=${currentLocation.lng}`);
-                                const data = await response.json();
-                                if (data.address) {
-                                    addressInfo = formatAddress(data);
-                                }
-                            } catch (e2) {
-                                console.error("Fallback geocoding error:", e2);
-                            }
+            if (!navigator.geolocation) {
+                addressInfo = "Geolocation not supported";
+                updateStatus('Location not supported', 'error');
+                updateLocationOverlay();
+                return;
+            }
+
+            const options = {
+                enableHighAccuracy: true,
+                timeout: 10000,
+                maximumAge: 30000
+            };
+
+            navigator.geolocation.getCurrentPosition(
+                async position => {
+                    await handleLocationSuccess(position);
+                    
+                    // Continue watching for location changes
+                    navigator.geolocation.watchPosition(
+                        handleLocationSuccess,
+                        handleLocationError,
+                        { enableHighAccuracy: true, maximumAge: 10000 }
+                    );
+                },
+                handleLocationError,
+                options
+            );
+        }
+
+        // Handle successful location retrieval
+        async function handleLocationSuccess(position) {
+            currentLocation = {
+                lat: position.coords.latitude,
+                lng: position.coords.longitude,
+                accuracy: position.coords.accuracy,
+                timestamp: new Date(position.timestamp)
+            };
+            
+            updateStatus('Location found', 'success');
+            locationStatus = 'success';
+            
+            // Try to get address information
+            await getAddressFromCoordinates(currentLocation.lat, currentLocation.lng);
+            
+            updateLocationOverlay();
+            updateMap();
+        }
+
+        // Handle location errors
+        function handleLocationError(error) {
+            console.error("Geolocation error: ", error);
+            
+            let errorMessage = "Location unavailable";
+            switch(error.code) {
+                case error.PERMISSION_DENIED:
+                    errorMessage = "Location access denied";
+                    break;
+                case error.POSITION_UNAVAILABLE:
+                    errorMessage = "Location unavailable";
+                    break;
+                case error.TIMEOUT:
+                    errorMessage = "Location timeout";
+                    break;
+            }
+            
+            addressInfo = errorMessage;
+            locationStatus = 'error';
+            updateStatus(errorMessage, 'error');
+            updateLocationOverlay();
+        }
+
+        // Get address from coordinates using multiple services
+        async function getAddressFromCoordinates(lat, lng) {
+            try {
+                // Try Google Geocoding first if API key is available
+                if (GOOGLE_MAPS_API_KEY !== 'AIzaSyBxiP-VOE5ROHLNKnZRwJEYpbKtZmHtWa0') {
+                    const response = await fetch(
+                        `https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&key=${GOOGLE_MAPS_API_KEY}`
+                    );
+                    
+                    if (response.ok) {
+                        const data = await response.json();
+                        if (data.results && data.results.length > 0) {
+                            addressInfo = data.results[0].formatted_address;
+                            return;
                         }
-                        
-                        updateLocationOverlay();
-                        updateMap();
-                    },
-                    error => {
-                        console.error("Geolocation error: ", error);
-                        addressText.textContent = "Location: Not available";
-                    },
-                    { enableHighAccuracy: true, maximumAge: 10000 }
+                    }
+                }
+                
+                // Fallback to OpenStreetMap Nominatim
+                const response = await fetch(
+                    `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&addressdetails=1`,
+                    {
+                        headers: {
+                            'User-Agent': 'GPS-Camera-App'
+                        }
+                    }
                 );
-            } else {
-                addressText.textContent = "Geolocation is not supported";
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.display_name) {
+                        addressInfo = data.display_name;
+                    } else if (data.address) {
+                        addressInfo = formatAddress(data);
+                    } else {
+                        addressInfo = `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
+                    }
+                } else {
+                    throw new Error('Geocoding failed');
+                }
+                
+            } catch (error) {
+                console.error("Geocoding error:", error);
+                // Use coordinates as fallback
+                addressInfo = `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
             }
         }
 
-        // Format address from Nominatim response (fallback)
+        // Format address from Nominatim response
         function formatAddress(data) {
             const addr = data.address;
             let parts = [];
@@ -308,11 +460,13 @@
                 parts.push(addr.road);
             }
             if (addr.suburb) parts.push(addr.suburb);
-            if (addr.city || addr.town || addr.village) parts.push(addr.city || addr.town || addr.village);
+            if (addr.city || addr.town || addr.village) {
+                parts.push(addr.city || addr.town || addr.village);
+            }
             if (addr.state) parts.push(addr.state);
             if (addr.country) parts.push(addr.country);
             
-            return parts.join(", ");
+            return parts.join(", ") || data.display_name;
         }
 
         // Update location text overlay
@@ -323,6 +477,11 @@
                 coordinatesText.textContent = `Lat ${currentLocation.lat.toFixed(6)}° Long ${currentLocation.lng.toFixed(6)}°`;
                 timeText.textContent = dateStr;
                 accuracyText.textContent = `Accuracy: ${currentLocation.accuracy.toFixed(0)} meters`;
+            } else {
+                addressText.textContent = addressInfo;
+                coordinatesText.textContent = "Coordinates unavailable";
+                timeText.textContent = new Date().toLocaleString();
+                accuracyText.textContent = "Accuracy: Unknown";
             }
         }
 
@@ -337,7 +496,10 @@
 
         // Capture and save photo
         async function captureAndSavePhoto() {
-            if (!cameraStream) return;
+            if (!cameraStream) {
+                alert("Camera not available");
+                return;
+            }
             
             try {
                 // Show saving indicator
@@ -360,7 +522,7 @@
                     .substring(0, 19);
                 
                 // Save the photo automatically
-                const imageData = photoCanvas.toDataURL('image/jpeg');
+                const imageData = photoCanvas.toDataURL('image/jpeg', 0.9);
                 savePhotoToDevice(imageData, `geo_photo_${dateStr}.jpg`);
                 
                 // Store photo data
@@ -376,11 +538,11 @@
                 photoResult.style.display = 'block';
                 cameraView.style.display = 'none';
                 
-                // Hide after 1 second
+                // Hide after 1.5 seconds
                 setTimeout(() => {
                     photoResult.style.display = 'none';
                     cameraView.style.display = 'block';
-                }, 1000);
+                }, 1500);
                 
             } catch (error) {
                 console.error("Error capturing/saving photo:", error);
@@ -392,14 +554,12 @@
 
         // Add overlay information to the canvas
         async function addOverlayToCanvas(ctx) {
-            if (!currentLocation) return;
-            
             const canvas = ctx.canvas;
             const dateStr = new Date().toLocaleString();
             
             // Draw semi-transparent background for text
             ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
-            const textHeight = 100;
+            const textHeight = 120;
             ctx.fillRect(0, canvas.height - textHeight, canvas.width, textHeight);
             
             // Draw text
@@ -409,13 +569,17 @@
             
             const lines = [
                 addressInfo,
-                `Lat ${currentLocation.lat.toFixed(6)}° Long ${currentLocation.lng.toFixed(6)}°`,
+                currentLocation ? 
+                    `Lat ${currentLocation.lat.toFixed(6)}° Long ${currentLocation.lng.toFixed(6)}°` :
+                    'Coordinates unavailable',
                 dateStr,
-                `Accuracy: ${currentLocation.accuracy.toFixed(0)} meters`
+                currentLocation ? 
+                    `Accuracy: ${currentLocation.accuracy.toFixed(0)} meters` :
+                    'Accuracy: Unknown'
             ];
             
             let y = canvas.height - textHeight + 10;
-            const lineHeight = 20;
+            const lineHeight = 25;
             
             lines.forEach((line, i) => {
                 if (i === 0) {
@@ -427,14 +591,20 @@
                 y += lineHeight;
             });
             
-            // Draw map thumbnail using Google Static Maps API
-            if (currentLocation) {
+            // Draw map thumbnail
+            await drawMapThumbnail(ctx, canvas);
+        }
+
+        // Draw map thumbnail on canvas
+        async function drawMapThumbnail(ctx, canvas) {
+            const mapWidth = 120;
+            const mapHeight = 80;
+            const x = canvas.width - 130;
+            const y = 10;
+            
+            if (currentLocation && GOOGLE_MAPS_API_KEY !== 'AIzaSyBxiP-VOE5ROHLNKnZRwJEYpbKtZmHtWa0') {
                 try {
-                    const mapWidth = 120;
-                    const mapHeight = 80;
                     const zoom = 15;
-                    
-                    // Create Google Static Maps URL
                     const staticMapUrl = `https://maps.googleapis.com/maps/api/staticmap?` +
                         `center=${currentLocation.lat},${currentLocation.lng}&` +
                         `zoom=${zoom}&` +
@@ -442,30 +612,23 @@
                         `markers=color:red%7C${currentLocation.lat},${currentLocation.lng}&` +
                         `key=${GOOGLE_MAPS_API_KEY}`;
                     
-                    // Create and load map image
                     const mapImage = new Image();
                     mapImage.crossOrigin = 'anonymous';
                     
-                    await new Promise((resolve, reject) => {
+                    await new Promise((resolve) => {
                         mapImage.onload = () => {
-                            // Draw the map image
-                            ctx.drawImage(mapImage, canvas.width - 130, 10, mapWidth, mapHeight);
-                            
-                            // Draw border around map
+                            ctx.drawImage(mapImage, x, y, mapWidth, mapHeight);
                             ctx.strokeStyle = 'white';
                             ctx.lineWidth = 2;
-                            ctx.strokeRect(canvas.width - 130, 10, mapWidth, mapHeight);
-                            
+                            ctx.strokeRect(x, y, mapWidth, mapHeight);
                             resolve();
                         };
                         
                         mapImage.onerror = () => {
-                            console.error("Failed to load Google Static Map");
                             drawMapFallback(ctx, canvas);
                             resolve();
                         };
                         
-                        // Load the map image
                         mapImage.src = staticMapUrl;
                     });
                     
@@ -473,6 +636,8 @@
                     console.error("Error rendering map thumbnail:", error);
                     drawMapFallback(ctx, canvas);
                 }
+            } else {
+                drawMapFallback(ctx, canvas);
             }
         }
 
@@ -487,43 +652,46 @@
             ctx.fillStyle = '#e2e8f0';
             ctx.fillRect(x, y, mapWidth, mapHeight);
             
-            // Draw some roads/paths
+            // Draw grid pattern
             ctx.strokeStyle = '#cbd5e0';
-            ctx.lineWidth = 2;
+            ctx.lineWidth = 1;
             
-            // Horizontal roads
-            ctx.beginPath();
-            ctx.moveTo(x, y + 25);
-            ctx.lineTo(x + mapWidth, y + 25);
-            ctx.moveTo(x, y + 55);
-            ctx.lineTo(x + mapWidth, y + 55);
-            ctx.stroke();
+            // Draw grid lines
+            for (let i = 0; i <= 4; i++) {
+                const lineX = x + (i * mapWidth / 4);
+                ctx.beginPath();
+                ctx.moveTo(lineX, y);
+                ctx.lineTo(lineX, y + mapHeight);
+                ctx.stroke();
+            }
             
-            // Vertical roads
-            ctx.beginPath();
-            ctx.moveTo(x + 30, y);
-            ctx.lineTo(x + 30, y + mapHeight);
-            ctx.moveTo(x + 90, y);
-            ctx.lineTo(x + 90, y + mapHeight);
-            ctx.stroke();
+            for (let i = 0; i <= 3; i++) {
+                const lineY = y + (i * mapHeight / 3);
+                ctx.beginPath();
+                ctx.moveTo(x, lineY);
+                ctx.lineTo(x + mapWidth, lineY);
+                ctx.stroke();
+            }
             
             // Draw some building blocks
             ctx.fillStyle = '#a0aec0';
-            ctx.fillRect(x + 10, y + 10, 15, 10);
+            ctx.fillRect(x + 10, y + 10, 15, 12);
             ctx.fillRect(x + 45, y + 35, 20, 15);
-            ctx.fillRect(x + 75, y + 15, 12, 8);
-            ctx.fillRect(x + 35, y + 60, 18, 12);
+            ctx.fillRect(x + 75, y + 15, 12, 10);
+            ctx.fillRect(x + 35, y + 55, 18, 12);
             
             // Draw location marker
             ctx.fillStyle = '#e53e3e';
-            ctx.font = 'bold 24px Arial';
-            ctx.fillText('📍', x + (mapWidth/2) - 12, y + (mapHeight/2) + 8);
+            ctx.font = 'bold 20px Arial';
+            ctx.fillText('📍', x + (mapWidth/2) - 10, y + (mapHeight/2) + 6);
             
-            // Draw coordinates
-            ctx.fillStyle = '#2d3748';
-            ctx.font = 'bold 9px Arial';
-            ctx.fillText(`${currentLocation.lat.toFixed(3)}, ${currentLocation.lng.toFixed(3)}`, 
-                        x + 5, y + mapHeight - 5);
+            // Draw coordinates if available
+            if (currentLocation) {
+                ctx.fillStyle = '#2d3748';
+                ctx.font = 'bold 8px Arial';
+                const coordText = `${currentLocation.lat.toFixed(3)}, ${currentLocation.lng.toFixed(3)}`;
+                ctx.fillText(coordText, x + 5, y + mapHeight - 5);
+            }
             
             // Draw border
             ctx.strokeStyle = 'white';
@@ -552,25 +720,19 @@
                 if (file) {
                     const reader = new FileReader();
                     reader.onload = async event => {
-                        // Create image to get dimensions
                         const img = new Image();
                         img.onload = async () => {
-                            // Set canvas dimensions
                             photoCanvas.width = img.width;
                             photoCanvas.height = img.height;
                             
-                            // Draw image to canvas
                             const ctx = photoCanvas.getContext('2d');
                             ctx.drawImage(img, 0, 0);
                             
-                            // Add overlay
                             await addOverlayToCanvas(ctx);
                             
-                            // Save the photo automatically
-                            const imageData = photoCanvas.toDataURL('image/jpeg');
+                            const imageData = photoCanvas.toDataURL('image/jpeg', 0.9);
                             savePhotoToDevice(imageData, `geo_upload_${new Date().getTime()}.jpg`);
                             
-                            // Store photo data
                             photoData.push({
                                 imageData: imageData,
                                 location: currentLocation,
@@ -602,11 +764,16 @@
             }
         }
 
-        // Global function for Google Maps callback
-        window.initMap = initMap;
-
         // Initialize the app when DOM is loaded
         document.addEventListener('DOMContentLoaded', initApp);
+
+        // Handle page visibility changes
+        document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'visible' && !currentLocation) {
+                // Retry location when page becomes visible
+                startLocationTracking();
+            }
+        });
     </script>
 </body>
 </html>
