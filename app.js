@@ -4,6 +4,7 @@ let currentCamera = 'environment';
 let map;
 let currentLocation = null;
 let photoData = [];
+let addressInfo = "Location not available";
 
 // DOM Elements
 const cameraView = document.getElementById('camera-view');
@@ -13,7 +14,7 @@ const captureBtn = document.getElementById('capture-btn');
 const uploadBtn = document.getElementById('upload-btn');
 const toggleCameraBtn = document.getElementById('toggle-camera');
 const saveBtn = document.getElementById('save-btn');
-const overlayText = document.getElementById('overlay-text');
+const overlayContainer = document.getElementById('overlay-container');
 
 // Initialize the application
 async function initApp() {
@@ -59,7 +60,7 @@ function initMap() {
 function startLocationTracking() {
     if (navigator.geolocation) {
         navigator.geolocation.watchPosition(
-            position => {
+            async position => {
                 currentLocation = {
                     lat: position.coords.latitude,
                     lng: position.coords.longitude,
@@ -67,28 +68,54 @@ function startLocationTracking() {
                     timestamp: new Date(position.timestamp)
                 };
                 
+                // Try to get address information
+                try {
+                    const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${currentLocation.lat}&lon=${currentLocation.lng}`);
+                    const data = await response.json();
+                    if (data.address) {
+                        addressInfo = formatAddress(data);
+                    }
+                } catch (e) {
+                    console.error("Geocoding error:", e);
+                }
+                
                 updateLocationOverlay();
                 updateMap();
             },
             error => {
                 console.error("Geolocation error: ", error);
-                overlayText.textContent = "Location: Not available";
+                overlayContainer.textContent = "Location: Not available";
             },
             { enableHighAccuracy: true, maximumAge: 10000 }
         );
     } else {
-        overlayText.textContent = "Geolocation is not supported by this browser.";
+        overlayContainer.textContent = "Geolocation is not supported by this browser.";
     }
+}
+
+// Format address from Nominatim response
+function formatAddress(data) {
+    const addr = data.address;
+    let parts = [];
+    
+    if (addr.road) parts.push(addr.road);
+    if (addr.suburb) parts.push(addr.suburb);
+    if (addr.city || addr.town || addr.village) parts.push(addr.city || addr.town || addr.village);
+    if (addr.state) parts.push(addr.state);
+    if (addr.country) parts.push(addr.country);
+    
+    return parts.join(", ");
 }
 
 // Update location text overlay
 function updateLocationOverlay() {
     if (currentLocation) {
-        overlayText.innerHTML = `
-            Lat: ${currentLocation.lat.toFixed(6)}<br>
-            Lng: ${currentLocation.lng.toFixed(6)}<br>
-            Accuracy: ${currentLocation.accuracy.toFixed(0)} meters<br>
-            ${currentLocation.timestamp.toLocaleTimeString()}
+        const dateStr = currentLocation.timestamp.toLocaleString();
+        overlayContainer.innerHTML = `
+            <div style="font-weight:bold; margin-bottom:5px;">${addressInfo}</div>
+            <div>Lat ${currentLocation.lat.toFixed(6)}° Long ${currentLocation.lng.toFixed(6)}°</div>
+            <div>${dateStr}</div>
+            <div>Accuracy: ${currentLocation.accuracy.toFixed(0)} meters</div>
         `;
     }
 }
@@ -122,6 +149,9 @@ function capturePhoto() {
     // Draw camera view to canvas
     context.drawImage(cameraView, 0, 0, photoCanvas.width, photoCanvas.height);
     
+    // Add overlay to the canvas
+    addOverlayToCanvas(context);
+    
     // Display the captured photo
     photoResult.src = photoCanvas.toDataURL('image/jpeg');
     photoResult.style.display = 'block';
@@ -131,7 +161,41 @@ function capturePhoto() {
     photoData.push({
         imageData: photoCanvas.toDataURL('image/jpeg'),
         location: currentLocation,
+        address: addressInfo,
         timestamp: new Date()
+    });
+}
+
+// Add overlay information to the canvas
+function addOverlayToCanvas(ctx) {
+    if (!currentLocation) return;
+    
+    const canvas = ctx.canvas;
+    const dateStr = new Date().toLocaleString();
+    
+    // Draw semi-transparent background for text
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+    const textHeight = 100;
+    ctx.fillRect(0, canvas.height - textHeight, canvas.width, textHeight);
+    
+    // Draw text
+    ctx.fillStyle = 'white';
+    ctx.font = 'bold 16px Arial';
+    ctx.textBaseline = 'top';
+    
+    const lines = [
+        addressInfo,
+        `Lat ${currentLocation.lat.toFixed(6)}° Long ${currentLocation.lng.toFixed(6)}°`,
+        dateStr,
+        `Accuracy: ${currentLocation.accuracy.toFixed(0)} meters`
+    ];
+    
+    let y = canvas.height - textHeight + 10;
+    const lineHeight = 20;
+    
+    lines.forEach(line => {
+        ctx.fillText(line, 10, y);
+        y += lineHeight;
     });
 }
 
@@ -141,21 +205,39 @@ function uploadPhoto() {
     input.type = 'file';
     input.accept = 'image/*';
     
-    input.onchange = e => {
+    input.onchange = async e => {
         const file = e.target.files[0];
         if (file) {
             const reader = new FileReader();
-            reader.onload = event => {
-                photoResult.src = event.target.result;
-                photoResult.style.display = 'block';
-                cameraView.style.display = 'none';
-                
-                // Store photo data
-                photoData.push({
-                    imageData: event.target.result,
-                    location: currentLocation,
-                    timestamp: new Date()
-                });
+            reader.onload = async event => {
+                // Create image to get dimensions
+                const img = new Image();
+                img.onload = () => {
+                    // Set canvas dimensions
+                    photoCanvas.width = img.width;
+                    photoCanvas.height = img.height;
+                    
+                    // Draw image to canvas
+                    const ctx = photoCanvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0);
+                    
+                    // Add overlay
+                    addOverlayToCanvas(ctx);
+                    
+                    // Display the result
+                    photoResult.src = photoCanvas.toDataURL('image/jpeg');
+                    photoResult.style.display = 'block';
+                    cameraView.style.display = 'none';
+                    
+                    // Store photo data
+                    photoData.push({
+                        imageData: photoCanvas.toDataURL('image/jpeg'),
+                        location: currentLocation,
+                        address: addressInfo,
+                        timestamp: new Date()
+                    });
+                };
+                img.src = event.target.result;
             };
             reader.readAsDataURL(file);
         }
@@ -185,11 +267,16 @@ function savePhoto() {
     
     const latestPhoto = photoData[photoData.length - 1];
     const link = document.createElement('a');
-    link.download = `geo_photo_${new Date().getTime()}.jpg`;
+    
+    // Create a filename with timestamp
+    const dateStr = new Date().toISOString()
+        .replace(/[:.]/g, '-')
+        .replace('T', '_')
+        .substring(0, 19);
+    
+    link.download = `geo_photo_${dateStr}.jpg`;
     link.href = latestPhoto.imageData;
     link.click();
-    
-    alert('Photo saved with geotag information!');
 }
 
 // Initialize the app when DOM is loaded
