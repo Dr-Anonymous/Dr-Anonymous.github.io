@@ -792,7 +792,7 @@
             document.body.removeChild(link);
         }
 
-        // Upload existing photo
+       // Upload existing photo - FIXED VERSION
         function uploadPhoto() {
             const input = document.createElement('input');
             input.type = 'file';
@@ -801,60 +801,153 @@
             input.onchange = async e => {
                 const file = e.target.files[0];
                 if (file) {
-                    const reader = new FileReader();
-                    reader.onload = async event => {
-                        const img = new Image();
-                        img.onload = async () => {
-                            photoCanvas.width = img.width;
-                            photoCanvas.height = img.height;
-                            
-                            const ctx = photoCanvas.getContext('2d');
-                            ctx.drawImage(img, 0, 0);
-                            
-                            await addOverlayToCanvas(ctx);
-                            
-                            const imageData = photoCanvas.toDataURL('image/jpeg', 0.9);
-                            savePhotoToDevice(imageData, `geo_upload_${new Date().getTime()}.jpg`);
-                            
-                            photoData.push({
-                                imageData: imageData,
-                                location: currentLocation,
-                                address: addressInfo,
-                                timestamp: new Date()
-                            });
+                    try {
+                        // Show saving indicator
+                        savingIndicator.style.display = 'block';
+                        
+                        const reader = new FileReader();
+                        reader.onload = async event => {
+                            try {
+                                const img = new Image();
+                                img.onload = async () => {
+                                    try {
+                                        photoCanvas.width = img.width;
+                                        photoCanvas.height = img.height;
+                                        
+                                        const ctx = photoCanvas.getContext('2d');
+                                        ctx.drawImage(img, 0, 0);
+                                        
+                                        await addOverlayToCanvas(ctx);
+                                        
+                                        const imageData = photoCanvas.toDataURL('image/jpeg', 0.9);
+                                        const timestamp = new Date().toISOString()
+                                            .replace(/[:.]/g, '-')
+                                            .replace('T', '_')
+                                            .substring(0, 19);
+                                        
+                                        savePhotoToDevice(imageData, `geo_upload_${timestamp}.jpg`);
+                                        
+                                        photoData.push({
+                                            imageData: imageData,
+                                            location: currentLocation,
+                                            address: addressInfo,
+                                            timestamp: new Date()
+                                        });
+                                        
+                                        // Show uploaded image briefly
+                                        photoResult.src = imageData;
+                                        photoResult.style.display = 'block';
+                                        cameraView.style.display = 'none';
+                                        
+                                        setTimeout(() => {
+                                            photoResult.style.display = 'none';
+                                            cameraView.style.display = 'block';
+                                        }, 1500);
+                                        
+                                    } catch (error) {
+                                        console.error('Error processing uploaded image:', error);
+                                        alert('Error processing uploaded image. Please try again.');
+                                    } finally {
+                                        savingIndicator.style.display = 'none';
+                                    }
+                                };
+                                
+                                img.onerror = () => {
+                                    console.error('Error loading uploaded image');
+                                    alert('Error loading image. Please select a valid image file.');
+                                    savingIndicator.style.display = 'none';
+                                };
+                                
+                                img.src = event.target.result;
+                                
+                            } catch (error) {
+                                console.error('Error reading uploaded file:', error);
+                                alert('Error reading file. Please try again.');
+                                savingIndicator.style.display = 'none';
+                            }
                         };
-                        img.src = event.target.result;
-                    };
-                    reader.readAsDataURL(file);
+                        
+                        reader.onerror = () => {
+                            console.error('Error reading file');
+                            alert('Error reading file. Please try again.');
+                            savingIndicator.style.display = 'none';
+                        };
+                        
+                        reader.readAsDataURL(file);
+                        
+                    } catch (error) {
+                        console.error('Error in uploadPhoto:', error);
+                        alert('Error uploading photo. Please try again.');
+                        savingIndicator.style.display = 'none';
+                    }
                 }
             };
             
             input.click();
         }
-
-        // Toggle between front and back camera
+        
+        // Toggle between front and back camera - FIXED VERSION
         async function toggleCamera() {
-            if (cameraStream) {
-                cameraStream.getTracks().forEach(track => track.stop());
-            }
-            
-            currentCamera = currentCamera === 'user' ? 'environment' : 'user';
-            await initCamera();
-            
-            if (photoResult.style.display === 'block') {
-                photoResult.style.display = 'none';
-                cameraView.style.display = 'block';
+            try {
+                // Stop current camera stream
+                if (cameraStream) {
+                    cameraStream.getTracks().forEach(track => track.stop());
+                    cameraStream = null;
+                }
+                
+                // Toggle camera facing mode
+                currentCamera = currentCamera === 'user' ? 'environment' : 'user';
+                
+                // Show status while switching
+                updateStatus('Switching camera...', 'warning');
+                
+                // Initialize new camera
+                await initCamera();
+                
+                // Hide photo result if showing
+                if (photoResult.style.display === 'block') {
+                    photoResult.style.display = 'none';
+                    cameraView.style.display = 'block';
+                }
+                
+            } catch (error) {
+                console.error('Error toggling camera:', error);
+                updateStatus('Camera switch failed', 'error');
+                
+                // Try to fallback to previous camera
+                try {
+                    currentCamera = currentCamera === 'user' ? 'environment' : 'user';
+                    await initCamera();
+                } catch (fallbackError) {
+                    console.error('Fallback camera initialization failed:', fallbackError);
+                    alert('Camera switching failed. Please refresh the page.');
+                }
             }
         }
-
-        // Initialize the app when DOM is loaded
-        document.addEventListener('DOMContentLoaded', initApp);
-
-        // Handle page visibility changes
+        
+        // Handle page visibility changes - FIXED VERSION
         document.addEventListener('visibilitychange', () => {
-            if (document.visibilityState === 'visible' && !currentLocation) {
-                // Retry location when page becomes visible
-                startLocationTracking();
+            try {
+                if (document.visibilityState === 'visible') {
+                    // Only retry location if we don't have it and we're not already getting it
+                    if (!currentLocation && locationStatus !== 'getting') {
+                        console.log('Page visible, retrying location...');
+                        startLocationTracking();
+                    }
+                    
+                    // Resume camera if it was stopped
+                    if (!cameraStream && cameraView) {
+                        console.log('Page visible, resuming camera...');
+                        initCamera().catch(error => {
+                            console.error('Error resuming camera:', error);
+                        });
+                    }
+                } else if (document.visibilityState === 'hidden') {
+                    // Optionally pause some operations when page is hidden
+                    console.log('Page hidden, pausing some operations...');
+                }
+            } catch (error) {
+                console.error('Error in visibility change handler:', error);
             }
         });
     </script>
