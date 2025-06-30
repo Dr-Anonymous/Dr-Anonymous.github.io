@@ -529,7 +529,7 @@
                     .substring(0, 19);
                 
                 const imageData = photoCanvas.toDataURL('image/jpeg', 0.9);
-                savePhotoToDevice(imageData, `geo_photo_${dateStr}.jpg`);
+                savePhotoToDevice(imageData, `OrthoCam_${dateStr}.jpg`);
                 
                 photoData.push({
                     imageData: imageData,
