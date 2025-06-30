@@ -204,7 +204,7 @@
             <img id="photo-result" style="display:none;">
             <div class="status-indicator" id="status-indicator">Getting location...</div>
             <div id="overlay-container">
-                <div class="location-title" id="location-title">Kakinada, Andhra Pradesh, India</div>
+                <!--<div class="location-title" id="location-title">Kakinada, Andhra Pradesh, India</div>-->
                 <div class="address-detail" id="address-text">Getting location...</div>
                 <div class="coordinates-info" id="coordinates-text"></div>
                 <div class="timestamp-info" id="time-text"></div>
@@ -240,7 +240,7 @@
         const uploadBtn = document.getElementById('upload-btn');
         const toggleCameraBtn = document.getElementById('toggle-camera');
         const overlayContainer = document.getElementById('overlay-container');
-        const locationTitle = document.getElementById('location-title');
+        //const locationTitle = document.getElementById('location-title');
         const addressText = document.getElementById('address-text');
         const coordinatesText = document.getElementById('coordinates-text');
         const timeText = document.getElementById('time-text');
@@ -338,9 +338,7 @@
                         scaledSize: new google.maps.Size(30, 30),
                         anchor: new google.maps.Point(15, 15)
                     }
-                });
-                
-                console.log('Google Maps initialized with satellite view');
+                });                
             } catch (error) {
                 console.error('Error initializing Google Maps:', error);
                 updateStatus('Map initialization failed', 'error');
@@ -446,7 +444,6 @@
                 );
                 if (response.ok) {
                     const data = await response.json();
-                    console.log(data);
                     if (data.results && data.results.length > 0) {
                         addressInfo = data.results[0].formatted_address;
                     }
@@ -474,12 +471,12 @@
                     timeZoneName: 'short'
                 });
                 
-                locationTitle.textContent = cityPart;
+                //locationTitle.textContent = cityPart;
                 addressText.textContent = addressInfo;
                 coordinatesText.textContent = `Lat ${currentLocation.lat.toFixed(6)}° Long ${currentLocation.lng.toFixed(6)}°`;
                 timeText.textContent = dateStr;
             } else {
-                locationTitle.textContent = "Kakinada, Andhra Pradesh, India";
+                //locationTitle.textContent = "Kakinada, Andhra Pradesh, India";
                 addressText.textContent = addressInfo;
                 coordinatesText.textContent = "Coordinates unavailable";
                 timeText.textContent = new Date().toLocaleString('en-GB', {
@@ -581,14 +578,15 @@
             const lineHeight = 24;
 
             // Location title
-            ctx.font = 'bold 20px Roboto, Arial';
+            /*ctx.font = 'bold 20px Roboto, Arial';
             const cityMatch = addressInfo.match(/([^,]+,\s*[^,]+,\s*[^,]+)/);
             const cityPart = cityMatch ? cityMatch[0] : "Location Found";
             ctx.fillText(cityPart, overlayPosition.x + 16, y);
             y += lineHeight;
+            */
 
             // Address detail
-            ctx.font = '14px Roboto, Arial';
+            ctx.font = '16px Roboto, Arial';
             ctx.fillStyle = '#e0e0e0';
             ctx.fillText(addressInfo, overlayPosition.x + 16, y);
             y += lineHeight;
@@ -614,9 +612,10 @@
             }
 
             // Draw app title on photo
-            ctx.fillStyle = 'rgba(0,0,0,0.7)';
+            /*ctx.fillStyle = 'rgba(0,0,0,0.7)';
             ctx.beginPath();
             ctx.roundRect(overlayPosition.x + overlayWidth - 140, overlayPosition.y - 30, 140, 30, [0, 0, 20, 20]);
+            */
             ctx.fill();
             ctx.fillStyle = 'white';
             ctx.font = '14px Roboto, Arial';
