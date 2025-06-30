@@ -654,13 +654,6 @@
                             ctx.lineWidth = 2;
                             ctx.strokeRect(x, y, mapWidth, mapHeight);
                             
-                            // Draw Google branding
-                            ctx.fillStyle = 'rgba(0,0,0,0.8)';
-                            ctx.fillRect(x + 4, y + mapHeight - 24, 60, 20);
-                            ctx.fillStyle = 'white';
-                            ctx.font = '12px Roboto, Arial';
-                            ctx.fillText('Google', x + 8, y + mapHeight - 10);
-                            
                             resolve();
                         };
                         
@@ -781,7 +774,7 @@
                             await addOverlayToCanvas(ctx);
                             
                             const imageData = photoCanvas.toDataURL('image/jpeg', 0.9);
-                            savePhotoToDevice(imageData, `geo_upload_${new Date().getTime()}.jpg`);
+                            savePhotoToDevice(imageData, `OrthoCam_${new Date().getTime()}.jpg`);
                             
                             photoData.push({
                                 imageData: imageData,
