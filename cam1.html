@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>GPS Map Camera</title>
+    <title>OrthoCam</title>
     <style>
         * {
             box-sizing: border-box;
@@ -673,7 +673,7 @@
             const mapWidth = 140;
             const mapHeight = 100;
             
-            if (currentLocation && GOOGLE_MAPS_API_KEY !== 'AIzaSyBxiP-VOE5ROHLNKnZRwJEYpbKtZmHtWa0') {
+            if (currentLocation) {
                 try {
                     const zoom = 17; // Higher zoom for better satellite detail
                     const staticMapUrl = `https://maps.googleapis.com/maps/api/staticmap?` +
@@ -721,6 +721,7 @@
                     drawMapFallback(ctx, canvas, position);
                 }
             } else {
+                console.log('Fallback thumbnail being drawn')
                 drawMapFallback(ctx, canvas, position);
             }
         }
