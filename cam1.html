@@ -448,30 +448,8 @@
                     const data = await response.json();
                     if (data.results && data.results.length > 0) {
                         addressInfo = data.results[0].formatted_address;
-                        return;
                     }
                 }
-                
-                const response = await fetch(
-                    `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&addressdetails=1`,
-                    {
-                        headers: {
-                            'User-Agent': 'GPS-Camera-App'
-                        }
-                    }
-                );
-                
-                if (response.ok) {
-                    const data = await response.json();
-                    if (data.display_name) {
-                        addressInfo = data.display_name;
-                    } else {
-                        addressInfo = `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
-                    }
-                } else {
-                    throw new Error('Geocoding failed');
-                }
-                
             } catch (error) {
                 console.error("Geocoding error:", error);
                 addressInfo = `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
