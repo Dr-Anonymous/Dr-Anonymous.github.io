@@ -4,6 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>OrthoCam</title>
+    
+    <link rel="shortcut icon" href="/assets/images/favicon_io/favicon.ico" type="image/x-icon">
+    <link rel="apple-touch-icon" sizes="180x180" href="/assets/images/favicon_io/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="/assets/images/favicon_io/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/assets/images/favicon_io/favicon-16x16.png">
+    <link rel="manifest" href="/assets/images/favicon_io/site.webmanifest">
     <style>
         * {
             box-sizing: border-box;
@@ -556,7 +562,7 @@
             const canvas = ctx.canvas;
 
             // Calculate overlay dimensions
-            const overlayHeight = 120;
+            const overlayHeight = 100;
             const mapWidth = 160;
             const mapHeight = 120;
             const mapPosition = { x: 16, y: canvas.height - overlayHeight - 16 };
@@ -567,7 +573,7 @@
             await drawMapThumbnail(ctx, canvas, mapPosition);
 
             // Draw overlay background
-            ctx.fillStyle = 'rgba(0, 0, 0, 0.85)';
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.60)';
             ctx.fillRect(overlayPosition.x, overlayPosition.y, overlayWidth, overlayHeight);
 
             // Draw text content matching Android app
@@ -586,19 +592,21 @@
             */
 
             // Address detail
-            ctx.font = '16px Roboto, Arial';
+            ctx.font = '20px Roboto, Arial';
             ctx.fillStyle = '#e0e0e0';
             ctx.fillText(addressInfo, overlayPosition.x + 16, y);
-            y += lineHeight;
+            y += lineHeight - 4;
 
             // Coordinates
             if (currentLocation) {
+                ctx.font = '14px Roboto, Arial';
+                ctx.fillStyle = '#b0b0b0';
                 ctx.fillText(`Lat ${currentLocation.lat.toFixed(6)}° Long ${currentLocation.lng.toFixed(6)}°`, overlayPosition.x + 16, y);
-                y += lineHeight - 4;
+                y += lineHeight;
 
                 // Timestamp
-                ctx.fillStyle = '#b0b0b0';
-                ctx.font = '14px Roboto, Arial';
+                ctx.font = '18px Roboto, Arial';
+                ctx.fillStyle = '#e0e0e0';
                 const dateStr = currentLocation.timestamp.toLocaleString('en-GB', {
                     day: '2-digit',
                     month: '2-digit',
@@ -612,14 +620,15 @@
             }
 
             // Draw app title on photo
-            /*ctx.fillStyle = 'rgba(0,0,0,0.7)';
+            /*
+            ctx.fillStyle = 'rgba(0,0,0,0.7)';
             ctx.beginPath();
-            ctx.roundRect(overlayPosition.x + overlayWidth - 140, overlayPosition.y - 30, 140, 30, [0, 0, 20, 20]);
-            */
+            ctx.roundRect(overlayPosition.x + overlayWidth - 140, overlayPosition.y - 35, 160, 50, [10, 10, 10, 10]);
             ctx.fill();
             ctx.fillStyle = 'white';
             ctx.font = '14px Roboto, Arial';
             ctx.fillText('📍 GPS Map Camera', overlayPosition.x + overlayWidth - 130, overlayPosition.y - 10);
+            */
         }
 
         // Enhanced map thumbnail drawing with proper satellite view
