@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>OrthoCam HD</title>
+    <title>OrthoCam</title>
     
     <link rel="shortcut icon" href="/assets/images/favicon_io/favicon.ico" type="image/x-icon">
     <link rel="apple-touch-icon" sizes="180x180" href="/assets/images/favicon_io/apple-touch-icon.png">
@@ -86,19 +86,22 @@
             background: #f0f0f0;
             transform: scale(1.05);
         }
+        /* Replace the existing #overlay-container and #map-thumbnail styles with these: */
+
         #overlay-container {
             position: absolute;
             bottom: 85px;
             right: 16px;
-            left: 180px;
+            left: 180px; /* Make space for the map thumbnail on the left */
             color: white;
             background: rgba(0,0,0,0.85);
             padding: 16px 20px;
             font-family: 'Roboto', Arial, sans-serif;
             backdrop-filter: blur(8px);
             border-radius: 8px;
-            max-width: calc(100% - 196px);
+            max-width: calc(100% - 196px); /* Prevent overlay from being too wide */
         }
+
         #map-thumbnail {
             position: absolute;
             bottom: 85px;
@@ -111,20 +114,25 @@
             z-index: 10;
             box-shadow: 0 4px 12px rgba(0,0,0,0.4);
         }
+
+        /* For mobile responsiveness */
         @media (max-width: 480px) {
             #overlay-container {
                 left: 140px;
                 max-width: calc(100% - 156px);
                 padding: 12px 16px;
             }
+
             #map-thumbnail {
                 width: 120px;
                 height: 90px;
             }
         }
+        
         #photo-canvas {
             display: none;
         }
+        
         .location-title {
             font-size: 20px;
             font-weight: 500;
@@ -202,6 +210,7 @@
             <img id="photo-result" style="display:none;">
             <div class="status-indicator" id="status-indicator">Getting location...</div>
             <div id="overlay-container">
+                <!--<div class="location-title" id="location-title">Kakinada, Andhra Pradesh, India</div>-->
                 <div class="address-detail" id="address-text">Getting location...</div>
                 <div class="coordinates-info" id="coordinates-text"></div>
                 <div class="timestamp-info" id="time-text"></div>
@@ -209,7 +218,7 @@
             <div id="map-thumbnail"></div>
         </div>
         <div id="controls">
-            <button id="toggle-camera" title="Switch Camera">🔄</button>
+            <button id="record-toggle" title="Start Recording">🎥</button>
             <button id="capture-btn" title="Capture">📷</button>
             <button id="upload-btn" title="Upload">📁</button>
         </div>
@@ -226,9 +235,8 @@
         let photoData = [];
         let addressInfo = "Getting location...";
         let locationStatus = 'getting';
-        let devicePixelRatio = window.devicePixelRatio || 1;
 
-        const GOOGLE_MAPS_API_KEY = 'AIzaSyBxiP-VOE5ROHLNKnZRwJEYpbKtZmHtWa0';
+        const GOOGLE_MAPS_API_KEY = 'AIzaSyBxiP-VOE5ROHLNKnZRwJEYpbKtZmHtWa0'; // Replace with your actual API key
 
         // DOM Elements
         const cameraView = document.getElementById('camera-view');
@@ -236,15 +244,19 @@
         const photoResult = document.getElementById('photo-result');
         const captureBtn = document.getElementById('capture-btn');
         const uploadBtn = document.getElementById('upload-btn');
-        const toggleCameraBtn = document.getElementById('toggle-camera');
         const overlayContainer = document.getElementById('overlay-container');
+        //const locationTitle = document.getElementById('location-title');
         const addressText = document.getElementById('address-text');
         const coordinatesText = document.getElementById('coordinates-text');
         const timeText = document.getElementById('time-text');
         const mapThumbnail = document.getElementById('map-thumbnail');
         const savingIndicator = document.getElementById('saving-indicator');
         const statusIndicator = document.getElementById('status-indicator');
+        
+        const recordBtn = document.getElementById('record-toggle');
 
+
+        
         // Initialize the application
         async function initApp() {
             updateStatus('Getting camera access...', 'warning');
@@ -257,7 +269,14 @@
             // Set up event listeners
             captureBtn.addEventListener('click', captureAndSavePhoto);
             uploadBtn.addEventListener('click', uploadPhoto);
-            toggleCameraBtn.addEventListener('click', toggleCamera);
+            
+            recordBtn.addEventListener('click', () => {
+                if (!isRecording) {
+                    startRecording();
+                } else {
+                    stopRecording();
+                }
+            });
         }
 
         // Update status indicator
@@ -272,7 +291,7 @@
             }
         }
 
-        // Load Google Maps API
+        // Load Google Maps API with proper async loading
         function loadGoogleMapsAPI() {
             return new Promise((resolve, reject) => {
                 if (window.google && window.google.maps) {
@@ -300,13 +319,13 @@
             });
         }
 
-        // Initialize Google Map
+        // Initialize Google Map with satellite view
         function initMap() {
             try {
                 const mapOptions = {
-                    zoom: 17,
+                    zoom: 17, // Increased zoom for better satellite detail
                     center: { lat: 16.9834, lng: 82.2527 },
-                    mapTypeId: 'satellite',
+                    mapTypeId: 'satellite', // Ensure satellite view
                     disableDefaultUI: true,
                     zoomControl: false,
                     mapTypeControl: false,
@@ -315,11 +334,12 @@
                     rotateControl: false,
                     fullscreenControl: false,
                     gestureHandling: 'none',
-                    styles: []
+                    styles: [] // Clear any custom styles that might interfere
                 };
 
                 map = new google.maps.Map(mapThumbnail, mapOptions);
 
+                // Custom marker for better visibility on satellite
                 marker = new google.maps.Marker({
                     position: { lat: 16.9834, lng: 82.2527 },
                     map: map,
@@ -341,27 +361,19 @@
             }
         }
 
-        // Initialize camera with higher resolution
+        // Initialize camera
         async function initCamera() {
             try {
                 const constraints = {
                     video: {
                         facingMode: currentCamera,
-                        width: { ideal: 4096, min: 1920 },
-                        height: { ideal: 3072, min: 1080 },
-                        frameRate: { ideal: 30, min: 15 }
+                        width: { ideal: 1920 },
+                        height: { ideal: 1080 }
                     }
                 };
                 
                 cameraStream = await navigator.mediaDevices.getUserMedia(constraints);
                 cameraView.srcObject = cameraStream;
-                
-                // Wait for video to load metadata
-                await new Promise(resolve => {
-                    cameraView.onloadedmetadata = resolve;
-                });
-                
-                console.log(`Camera resolution: ${cameraView.videoWidth}x${cameraView.videoHeight}`);
                 updateStatus('Camera ready', 'success');
             } catch (err) {
                 console.error("Camera error: ", err);
@@ -400,22 +412,7 @@
             );
         }
 
-        // Handle successful location retrieval
-        async function handleLocationSuccess(position) {
-            currentLocation = {
-                lat: position.coords.latitude,
-                lng: position.coords.longitude,
-                accuracy: position.coords.accuracy,
-                timestamp: new Date(position.timestamp)
-            };
-            
-            updateStatus('Location found', 'success');
-            locationStatus = 'success';
-            
-            await getAddressFromCoordinates(currentLocation.lat, currentLocation.lng);
-            updateLocationOverlay();
-            updateMap();
-        }
+       
 
         // Handle location errors
         function handleLocationError(error) {
@@ -458,9 +455,13 @@
             }
         }
 
-        // Update location text overlay
+        // Update location text overlay to match Android app style
         function updateLocationOverlay() {
             if (currentLocation) {
+                // Extract city/area from address
+                const cityMatch = addressInfo.match(/([^,]+,\s*[^,]+,\s*[^,]+)/);
+                const cityPart = cityMatch ? cityMatch[0] : "Location Found";
+                
                 const dateStr = currentLocation.timestamp.toLocaleString('en-GB', {
                     day: '2-digit',
                     month: '2-digit',
@@ -471,10 +472,12 @@
                     timeZoneName: 'short'
                 });
                 
+                //locationTitle.textContent = cityPart;
                 addressText.textContent = addressInfo;
                 coordinatesText.textContent = `Lat ${currentLocation.lat.toFixed(6)}° Long ${currentLocation.lng.toFixed(6)}°`;
                 timeText.textContent = dateStr;
             } else {
+                //locationTitle.textContent = "Kakinada, Andhra Pradesh, India";
                 addressText.textContent = addressInfo;
                 coordinatesText.textContent = "Coordinates unavailable";
                 timeText.textContent = new Date().toLocaleString('en-GB', {
@@ -495,11 +498,12 @@
                 const position = { lat: currentLocation.lat, lng: currentLocation.lng };
                 map.setCenter(position);
                 marker.setPosition(position);
+                // Ensure satellite view is maintained
                 map.setMapTypeId('satellite');
             }
         }
 
-        // Capture and save photo with high resolution
+        // Capture and save photo
         async function captureAndSavePhoto() {
             if (!cameraStream) {
                 alert("Camera not available");
@@ -509,33 +513,21 @@
             try {
                 savingIndicator.style.display = 'block';
                 
-                // Use the actual video dimensions for maximum quality
-                const videoWidth = cameraView.videoWidth;
-                const videoHeight = cameraView.videoHeight;
-                
-                // Set canvas to actual video resolution
-                photoCanvas.width = videoWidth;
-                photoCanvas.height = videoHeight;
-                
                 const context = photoCanvas.getContext('2d');
+                photoCanvas.width = cameraView.videoWidth;
+                photoCanvas.height = cameraView.videoHeight;
                 
-                // Disable image smoothing for crisp rendering
-                context.imageSmoothingEnabled = false;
+                context.drawImage(cameraView, 0, 0, photoCanvas.width, photoCanvas.height);
                 
-                // Draw the video frame at full resolution
-                context.drawImage(cameraView, 0, 0, videoWidth, videoHeight);
-                
-                // Add overlay with high-resolution rendering
-                await addOverlayToCanvas(context, videoWidth, videoHeight);
+                await addOverlayToCanvas(context);
                 
                 const dateStr = new Date().toISOString()
                     .replace(/[:.]/g, '-')
                     .replace('T', '_')
                     .substring(0, 19);
                 
-                // Use maximum quality JPEG (0.95 instead of 0.9)
-                const imageData = photoCanvas.toDataURL('image/jpeg', 0.95);
-                savePhotoToDevice(imageData, `OrthoCam_HD_${dateStr}.jpg`);
+                const imageData = photoCanvas.toDataURL('image/jpeg', 0.9);
+                savePhotoToDevice(imageData, `OrthoCam_${dateStr}.jpg`);
                 
                 photoData.push({
                     imageData: imageData,
@@ -561,130 +553,13 @@
             }
         }
 
-        // Add overlay with proper scaling for high resolution
-        async function addOverlayToCanvas(ctx, canvasWidth, canvasHeight) {
-            // Calculate scaling factor based on canvas size
-            const scaleFactor = Math.min(canvasWidth / 1920, canvasHeight / 1080);
-            
-            // Base dimensions (for 1920x1080)
-            const baseOverlayHeight = 100;
-            const baseMapWidth = 160;
-            const baseMapHeight = 120;
-            const basePadding = 16;
-            const baseTextSize = 20;
-            
-            // Scaled dimensions
-            const overlayHeight = baseOverlayHeight * scaleFactor;
-            const mapWidth = baseMapWidth * scaleFactor;
-            const mapHeight = baseMapHeight * scaleFactor;
-            const padding = basePadding * scaleFactor;
-            
-            const mapPosition = { 
-                x: padding, 
-                y: canvasHeight - overlayHeight - padding 
-            };
-            const overlayPosition = { 
-                x: mapWidth + (padding * 2), 
-                y: canvasHeight - overlayHeight - padding 
-            };
-            const overlayWidth = canvasWidth - mapWidth - (padding * 3);
-
-            // Draw map thumbnail
-            await drawMapThumbnail(ctx, mapPosition, mapWidth, mapHeight, scaleFactor);
-
-            // Draw overlay background
-            ctx.fillStyle = 'rgba(0, 0, 0, 0.70)';
-            ctx.fillRect(overlayPosition.x, overlayPosition.y, overlayWidth, overlayHeight);
-
-            // Draw text content with scaled fonts
-            ctx.fillStyle = 'white';
-            ctx.textBaseline = 'top';
-
-            let y = overlayPosition.y + (padding);
-            const lineHeight = 24 * scaleFactor;
-
-            // Address detail
-            ctx.font = `${baseTextSize * scaleFactor}px Roboto, Arial`;
-            ctx.fillStyle = '#e0e0e0';
-            ctx.fillText(addressInfo, overlayPosition.x + padding, y);
-            y += lineHeight;
-
-            // Coordinates
-            if (currentLocation) {
-                ctx.font = `${14 * scaleFactor}px Roboto, Arial`;
-                ctx.fillStyle = '#b0b0b0';
-                ctx.fillText(`Lat ${currentLocation.lat.toFixed(6)}° Long ${currentLocation.lng.toFixed(6)}°`, overlayPosition.x + padding, y);
-                y += lineHeight;
-
-                // Timestamp
-                ctx.font = `${18 * scaleFactor}px Roboto, Arial`;
-                ctx.fillStyle = '#e0e0e0';
-                const dateStr = currentLocation.timestamp.toLocaleString('en-GB', {
-                    day: '2-digit',
-                    month: '2-digit',
-                    year: 'numeric',
-                    hour: '2-digit',
-                    minute: '2-digit',
-                    hour12: true,
-                    timeZoneName: 'short'
-                });
-                ctx.fillText(dateStr, overlayPosition.x + padding, y);
-            }
-        }
-
-        // High-resolution map thumbnail
-        async function drawMapThumbnail(ctx, position, mapWidth, mapHeight, scaleFactor) {
-            const { x, y } = position;
-            
-            if (currentLocation) {
-                try {
-                    const zoom = 17;
-                    // Request higher resolution map
-                    const mapSize = Math.max(mapWidth, mapHeight);
-                    const staticMapUrl = `https://maps.googleapis.com/maps/api/staticmap?` +
-                        `center=${currentLocation.lat},${currentLocation.lng}&` +
-                        `zoom=${zoom}&` +
-                        `size=${Math.round(mapSize)}x${Math.round(mapSize)}&` +
-                        `maptype=satellite&` +
-                        `markers=color:red%7Csize:mid%7C${currentLocation.lat},${currentLocation.lng}&` +
-                        `scale=2&` +
-                        `key=${GOOGLE_MAPS_API_KEY}`;
-                    
-                    const mapImage = new Image();
-                    mapImage.crossOrigin = 'anonymous';
-                    
-                    await new Promise((resolve) => {
-                        mapImage.onload = () => {
-                            ctx.drawImage(mapImage, x, y, mapWidth, mapHeight);
-                            
-                            // Draw border
-                            ctx.strokeStyle = 'rgba(255,255,255,0.9)';
-                            ctx.lineWidth = 2 * scaleFactor;
-                            ctx.strokeRect(x, y, mapWidth, mapHeight);
-                            
-                            resolve();
-                        };
-                        
-                        mapImage.onerror = () => {
-                            drawMapFallback(ctx, position, mapWidth, mapHeight, scaleFactor);
-                            resolve();
-                        };
-                        
-                        mapImage.src = staticMapUrl;
-                    });
-                    
-                } catch (error) {
-                    console.error("Error rendering map thumbnail:", error);
-                    drawMapFallback(ctx, position, mapWidth, mapHeight, scaleFactor);
-                }
-            } else {
-                drawMapFallback(ctx, position, mapWidth, mapHeight, scaleFactor);
-            }
-        }
+        
 
         // Enhanced fallback map drawing
-        function drawMapFallback(ctx, position, mapWidth, mapHeight, scaleFactor) {
+        function drawMapFallback(ctx, canvas, position) {
             const { x, y } = position;
+            const mapWidth = 140;
+            const mapHeight = 100;
             
             // Draw satellite-like background
             ctx.fillStyle = '#2a4d3a';
@@ -693,16 +568,16 @@
             // Draw terrain patterns
             ctx.fillStyle = '#1a3d2a';
             for (let i = 0; i < 8; i++) {
-                const rectX = x + (i * 20 * scaleFactor) + Math.random() * 10 * scaleFactor;
+                const rectX = x + (i * 20) + Math.random() * 10;
                 const rectY = y + Math.random() * mapHeight;
-                const rectW = (15 + Math.random() * 10) * scaleFactor;
-                const rectH = (8 + Math.random() * 8) * scaleFactor;
+                const rectW = 15 + Math.random() * 10;
+                const rectH = 8 + Math.random() * 8;
                 ctx.fillRect(rectX, rectY, rectW, rectH);
             }
             
             // Draw roads/paths
             ctx.strokeStyle = '#6b7280';
-            ctx.lineWidth = 2 * scaleFactor;
+            ctx.lineWidth = 2;
             ctx.beginPath();
             ctx.moveTo(x, y + mapHeight * 0.3);
             ctx.lineTo(x + mapWidth, y + mapHeight * 0.4);
@@ -717,19 +592,34 @@
             // Marker background
             ctx.fillStyle = '#ffffff';
             ctx.beginPath();
-            ctx.arc(markerX, markerY, 8 * scaleFactor, 0, 2 * Math.PI);
+            ctx.arc(markerX, markerY, 8, 0, 2 * Math.PI);
             ctx.fill();
             
             // Marker center
             ctx.fillStyle = '#dc2626';
             ctx.beginPath();
-            ctx.arc(markerX, markerY, 5 * scaleFactor, 0, 2 * Math.PI);
+            ctx.arc(markerX, markerY, 5, 0, 2 * Math.PI);
             ctx.fill();
+            
+            // Coordinates if available
+            if (currentLocation) {
+                ctx.fillStyle = 'white';
+                ctx.font = '10px Roboto, Arial';
+                const coordText = `${currentLocation.lat.toFixed(3)}, ${currentLocation.lng.toFixed(3)}`;
+                ctx.fillText(coordText, x + 4, y + 12);
+            }
             
             // Draw border
             ctx.strokeStyle = 'rgba(255,255,255,0.9)';
-            ctx.lineWidth = 2 * scaleFactor;
+            ctx.lineWidth = 2;
             ctx.strokeRect(x, y, mapWidth, mapHeight);
+            
+            // Google branding
+            ctx.fillStyle = 'rgba(0,0,0,0.8)';
+            ctx.fillRect(x + 4, y + mapHeight - 24, 60, 20);
+            ctx.fillStyle = 'white';
+            ctx.font = '12px Roboto, Arial';
+            ctx.fillText('Google', x + 8, y + mapHeight - 10);
         }
 
         // Save photo to device
@@ -742,7 +632,7 @@
             document.body.removeChild(link);
         }
 
-        // Upload existing photo
+       // Upload existing photo
         function uploadPhoto() {
             const input = document.createElement('input');
             input.type = 'file';
@@ -755,18 +645,16 @@
                     reader.onload = async event => {
                         const img = new Image();
                         img.onload = async () => {
-                            // Preserve original image dimensions
                             photoCanvas.width = img.width;
                             photoCanvas.height = img.height;
                             
                             const ctx = photoCanvas.getContext('2d');
-                            ctx.imageSmoothingEnabled = false;
                             ctx.drawImage(img, 0, 0);
                             
-                            await addOverlayToCanvas(ctx, img.width, img.height);
+                            await addOverlayToCanvas(ctx);
                             
-                            const imageData = photoCanvas.toDataURL('image/jpeg', 0.95);
-                            savePhotoToDevice(imageData, `OrthoCam_HD_${new Date().getTime()}.jpg`);
+                            const imageData = photoCanvas.toDataURL('image/jpeg', 0.9);
+                            savePhotoToDevice(imageData, `OrthoCam_${new Date().getTime()}.jpg`);
                             
                             photoData.push({
                                 imageData: imageData,
@@ -784,30 +672,229 @@
             input.click();
         }
 
-        // Toggle between front and back camera
-        async function toggleCamera() {
-            if (cameraStream) {
-                cameraStream.getTracks().forEach(track => track.stop());
-            }
-            
-            currentCamera = currentCamera === 'user' ? 'environment' : 'user';
-            await initCamera();
-            
-            if (photoResult.style.display === 'block') {
-                photoResult.style.display = 'none';
-                cameraView.style.display = 'block';
-            }
-        }
-
         // Initialize the app when DOM is loaded
         document.addEventListener('DOMContentLoaded', initApp);
 
         // Handle page visibility changes
         document.addEventListener('visibilitychange', () => {
             if (document.visibilityState === 'visible' && !currentLocation) {
+                // Retry location when page becomes visible
                 startLocationTracking();
             }
         });
     </script>
+
+<!-- UPDATED cam.html: Adds video recording with overlays baked into video -->
+
+<script>
+let videoCanvas = document.createElement('canvas');
+let videoCtx = videoCanvas.getContext('2d');
+let recordingChunks = [];
+let recorder = null;
+let isRecording = false;
+
+function startRecording() {
+    if (!cameraStream) {
+        alert("Camera not available");
+        return;
+    }
+
+    isRecording = true;
+    recordBtn.textContent = '⏹';
+    updateStatus('Recording started...', 'success');
+
+    videoCanvas.width = cameraView.videoWidth;
+    videoCanvas.height = cameraView.videoHeight;
+
+    recordingChunks = [];
+    const stream = videoCanvas.captureStream(30);
+    recorder = new MediaRecorder(stream, { mimeType: 'video/webm' });
+
+    recorder.ondataavailable = e => recordingChunks.push(e.data);
+    recorder.onstop = saveRecordedVideo;
+
+    recorder.start();
+
+    drawFrameLoop();
+}
+
+async function drawFrameLoop() {
+    while (isRecording) {
+        videoCtx.drawImage(cameraView, 0, 0, videoCanvas.width, videoCanvas.height);
+        await addOverlayToCanvas(videoCtx); // ensure overlay completes
+        await new Promise(resolve => setTimeout(resolve, 33)); // ~30 FPS
+    }
+}
+
+function stopRecording() {
+    isRecording = false;
+    recordBtn.textContent = '🎥';
+    updateStatus('Recording stopped', 'warning');
+    if (recorder && recorder.state !== 'inactive') {
+        recorder.stop();
+    }
+}
+
+function saveRecordedVideo() {
+    const blob = new Blob(recordingChunks, { type: 'video/webm' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `OrthoCam_${Date.now()}.webm`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+}
+    // Add these variables at the top with other declarations
+let staticMapImage = null;
+let overlayTextData = null;
+
+// Replace the existing drawMapThumbnail function
+async function drawMapThumbnail(ctx, canvas, position) {
+    const { x, y } = position;
+    const mapWidth = 140;
+    const mapHeight = 100;
+    
+    if (staticMapImage) {
+        // Use cached static map image
+        ctx.drawImage(staticMapImage, x, y, mapWidth, mapHeight);
+        
+        // Draw border
+        ctx.strokeStyle = 'rgba(255,255,255,0.9)';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(x, y, mapWidth, mapHeight);
+    } else {
+        // Fallback if no static map loaded
+        drawMapFallback(ctx, canvas, position);
+    }
+}
+
+// Add this new function to load static map once
+async function loadStaticMapImage() {
+    if (!currentLocation) return;
+    
+    try {
+        const zoom = 17;
+        const mapWidth = 140;
+        const mapHeight = 100;
+        const staticMapUrl = `https://maps.googleapis.com/maps/api/staticmap?` +
+            `center=${currentLocation.lat},${currentLocation.lng}&` +
+            `zoom=${zoom}&` +
+            `size=${mapWidth}x${mapHeight}&` +
+            `maptype=satellite&` +
+            `markers=color:red%7Csize:mid%7C${currentLocation.lat},${currentLocation.lng}&` +
+            `scale=2&` +
+            `key=${GOOGLE_MAPS_API_KEY}`;
+        
+        staticMapImage = new Image();
+        staticMapImage.crossOrigin = 'anonymous';
+        
+        await new Promise((resolve, reject) => {
+            staticMapImage.onload = resolve;
+            staticMapImage.onerror = reject;
+            staticMapImage.src = staticMapUrl;
+        });
+    } catch (error) {
+        console.error("Error loading static map:", error);
+        staticMapImage = null;
+    }
+}
+
+// Add this function to cache overlay text data
+function cacheOverlayTextData() {
+    if (!currentLocation) return;
+    
+    const dateStr = currentLocation.timestamp.toLocaleString('en-GB', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: true,
+        timeZoneName: 'short'
+    });
+    
+    overlayTextData = {
+        address: addressInfo,
+        coordinates: `Lat ${currentLocation.lat.toFixed(6)}° Long ${currentLocation.lng.toFixed(6)}°`,
+        timestamp: dateStr
+    };
+}
+
+// Update the handleLocationSuccess function to load static map
+async function handleLocationSuccess(position) {
+    currentLocation = {
+        lat: position.coords.latitude,
+        lng: position.coords.longitude,
+        accuracy: position.coords.accuracy,
+        timestamp: new Date(position.timestamp)
+    };
+    
+    updateStatus('Location found', 'success');
+    locationStatus = 'success';
+    
+    await getAddressFromCoordinates(currentLocation.lat, currentLocation.lng);
+    
+    // Load static map and cache text data
+    await loadStaticMapImage();
+    cacheOverlayTextData();
+    
+    updateLocationOverlay();
+    updateMap();
+}
+
+// Update addOverlayToCanvas to use cached data
+async function addOverlayToCanvas(ctx) {
+    const canvas = ctx.canvas;
+
+    // Calculate overlay dimensions
+    const overlayHeight = 100;
+    const mapWidth = 160;
+    const mapHeight = 120;
+    const mapPosition = { x: 16, y: canvas.height - overlayHeight - 16 };
+    const overlayPosition = { x: mapWidth + 32, y: canvas.height - overlayHeight - 16 };
+    const overlayWidth = canvas.width - mapWidth - 48;
+
+    // Draw map thumbnail (now uses cached static image)
+    await drawMapThumbnail(ctx, canvas, mapPosition);
+
+    // Draw overlay background
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.60)';
+    ctx.fillRect(overlayPosition.x, overlayPosition.y, overlayWidth, overlayHeight);
+
+    // Draw text content using cached data
+    ctx.fillStyle = 'white';
+    ctx.textBaseline = 'top';
+
+    let y = overlayPosition.y + 16;
+    const lineHeight = 24;
+
+    if (overlayTextData) {
+        // Address detail
+        ctx.font = '20px Roboto, Arial';
+        ctx.fillStyle = '#e0e0e0';
+        ctx.fillText(overlayTextData.address, overlayPosition.x + 16, y);
+        y += lineHeight - 4;
+
+        // Coordinates
+        ctx.font = '14px Roboto, Arial';
+        ctx.fillStyle = '#b0b0b0';
+        ctx.fillText(overlayTextData.coordinates, overlayPosition.x + 16, y);
+        y += lineHeight;
+
+        // Timestamp
+        ctx.font = '18px Roboto, Arial';
+        ctx.fillStyle = '#e0e0e0';
+        ctx.fillText(overlayTextData.timestamp, overlayPosition.x + 16, y);
+    } else {
+        // Fallback text
+        ctx.font = '18px Roboto, Arial';
+        ctx.fillStyle = '#e0e0e0';
+        ctx.fillText('Getting location...', overlayPosition.x + 16, y);
+    }
+}
+</script>
+
+    
 </body>
 </html>
