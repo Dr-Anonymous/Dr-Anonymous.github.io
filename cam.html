@@ -265,6 +265,10 @@
             
             loadGoogleMapsAPI();
             startLocationTracking();
+
+            captureBtn.disabled = true;
+            uploadBtn.disabled = true;
+            recordBtn.disabled = true;
             
             // Set up event listeners
             captureBtn.addEventListener('click', captureAndSavePhoto);
@@ -841,6 +845,10 @@ async function handleLocationSuccess(position) {
     
     updateLocationOverlay();
     updateMap();
+    // Enable buttons once location is retrieved
+    captureBtn.disabled = false;
+    uploadBtn.disabled = false;
+    recordBtn.disabled = false;
 }
 
 // Update addOverlayToCanvas to use cached data
