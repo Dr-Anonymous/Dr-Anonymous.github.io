@@ -5,11 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>OrthoCam</title>
     
-    <link rel="shortcut icon" href="/assets/images/favicon_io/favicon.ico" type="image/x-icon">
-    <link rel="apple-touch-icon" sizes="180x180" href="/assets/images/favicon_io/apple-touch-icon.png">
-    <link rel="icon" type="image/png" sizes="32x32" href="/assets/images/favicon_io/favicon-32x32.png">
-    <link rel="icon" type="image/png" sizes="16x16" href="/assets/images/favicon_io/favicon-16x16.png">
-    <link rel="manifest" href="/assets/images/favicon_io/site.webmanifest">
+    <link rel="shortcut icon" href__="/assets/images/favicon_io/favicon.ico" type="image/x-icon">
+    <link rel="apple-touch-icon" sizes="180x180" href__="/assets/images/favicon_io/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href__="/assets/images/favicon_io/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href__="/assets/images/favicon_io/favicon-16x16.png">
+    <link rel="manifest" href__="/assets/images/favicon_io/site.webmanifest">
     <style>
         * {
             box-sizing: border-box;
@@ -46,6 +46,7 @@
             background: rgba(0,0,0,0.8);
             display: flex;
             justify-content: space-around;
+            align-items: center;
             position: fixed;
             bottom: 0;
             left: 0;
@@ -75,31 +76,37 @@
         }
         #capture-btn {
             background: #fff;
-            color: #000;
             width: 65px;
             height: 65px;
             border-radius: 50%;
-            font-size: 28px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            border: 4px solid black;
+            box-shadow: 0 0 0 2px white;
         }
         #capture-btn:hover {
-            background: #f0f0f0;
             transform: scale(1.05);
         }
-        /* Replace the existing #overlay-container and #map-thumbnail styles with these: */
+        #record-toggle.recording {
+            background-color: #f44336;
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
 
         #overlay-container {
             position: absolute;
             bottom: 85px;
             right: 16px;
-            left: 180px; /* Make space for the map thumbnail on the left */
+            left: 180px;
             color: white;
             background: rgba(0,0,0,0.85);
             padding: 16px 20px;
             font-family: 'Roboto', Arial, sans-serif;
             backdrop-filter: blur(8px);
             border-radius: 8px;
-            max-width: calc(100% - 196px); /* Prevent overlay from being too wide */
+            max-width: calc(100% - 196px);
         }
 
         #map-thumbnail {
@@ -115,14 +122,12 @@
             box-shadow: 0 4px 12px rgba(0,0,0,0.4);
         }
 
-        /* For mobile responsiveness */
         @media (max-width: 480px) {
             #overlay-container {
                 left: 140px;
                 max-width: calc(100% - 156px);
                 padding: 12px 16px;
             }
-
             #map-thumbnail {
                 width: 120px;
                 height: 90px;
@@ -197,7 +202,7 @@
                 width: auto;
                 background: rgba(0,0,0,0.8);
                 border-radius: 35px;
-                padding: 20px;
+                padding: 10px;
             }
         }
     </style>
@@ -208,9 +213,8 @@
             <video id="camera-view" autoplay playsinline></video>
             <canvas id="photo-canvas"></canvas>
             <img id="photo-result" style="display:none;">
-            <div class="status-indicator" id="status-indicator">Getting location...</div>
+            <div class="status-indicator" id="status-indicator">Initializing...</div>
             <div id="overlay-container">
-                <!--<div class="location-title" id="location-title">Kakinada, Andhra Pradesh, India</div>-->
                 <div class="address-detail" id="address-text">Getting location...</div>
                 <div class="coordinates-info" id="coordinates-text"></div>
                 <div class="timestamp-info" id="time-text"></div>
@@ -218,613 +222,216 @@
             <div id="map-thumbnail"></div>
         </div>
         <div id="controls">
-            <button id="toggle-camera" title="Switch Camera">🔄</button>
-            <button id="capture-btn" title="Capture">📷</button>
-            <button id="upload-btn" title="Upload">📁</button>
+            <button id="record-toggle" title="Start Recording">🎥</button>
+            <button id="capture-btn" title="Capture Photo">
+                <div style="width: 100%; height: 100%; background: white; border-radius: 50%;"></div>
+            </button>
+            <button id="switch-camera-btn" title="Switch Camera">🔄</button>
         </div>
-        <div id="saving-indicator">Saving photo...</div>
     </div>
+    <div id="saving-indicator">Saving...</div>
 
     <script>
-        // Initialize variables
-        let cameraStream = null;
-        let currentCamera = 'environment';
-        let map;
-        let marker;
-        let currentLocation = null;
-        let photoData = [];
-        let addressInfo = "Getting location...";
-        let locationStatus = 'getting';
-
-        const GOOGLE_MAPS_API_KEY = 'AIzaSyBxiP-VOE5ROHLNKnZRwJEYpbKtZmHtWa0'; // Replace with your actual API key
-
-        // DOM Elements
+    document.addEventListener('DOMContentLoaded', () => {
         const cameraView = document.getElementById('camera-view');
-        const photoCanvas = document.getElementById('photo-canvas');
-        const photoResult = document.getElementById('photo-result');
+        const recordBtn = document.getElementById('record-toggle');
         const captureBtn = document.getElementById('capture-btn');
-        const uploadBtn = document.getElementById('upload-btn');
-        const toggleCameraBtn = document.getElementById('toggle-camera');
-        const overlayContainer = document.getElementById('overlay-container');
-        //const locationTitle = document.getElementById('location-title');
+        const switchCameraBtn = document.getElementById('switch-camera-btn');
+        const statusIndicator = document.getElementById('status-indicator');
         const addressText = document.getElementById('address-text');
         const coordinatesText = document.getElementById('coordinates-text');
         const timeText = document.getElementById('time-text');
         const mapThumbnail = document.getElementById('map-thumbnail');
         const savingIndicator = document.getElementById('saving-indicator');
-        const statusIndicator = document.getElementById('status-indicator');
 
-        // Initialize the application
-        async function initApp() {
-            updateStatus('Getting camera access...', 'warning');
-            await initCamera();
-            updateStatus('Getting location...', 'warning');
-            
-            loadGoogleMapsAPI();
-            startLocationTracking();
-            
-            // Set up event listeners
-            captureBtn.addEventListener('click', captureAndSavePhoto);
-            uploadBtn.addEventListener('click', uploadPhoto);
-            toggleCameraBtn.addEventListener('click', toggleCamera);
-        }
+        let mediaRecorder;
+        let recordedChunks = [];
+        let stream;
+        let isRecording = false;
+        let currentMimeType = '';
+        let currentFacingMode = 'environment';
 
-        // Update status indicator
-        function updateStatus(message, type = 'warning') {
-            statusIndicator.textContent = message;
-            statusIndicator.className = `status-indicator ${type}`;
-            
-            if (type === 'success') {
-                setTimeout(() => {
-                    statusIndicator.style.opacity = '0.7';
-                }, 2000);
-            }
-        }
-
-        // Load Google Maps API with proper async loading
-        function loadGoogleMapsAPI() {
-            return new Promise((resolve, reject) => {
-                if (window.google && window.google.maps) {
-                    initMap();
-                    resolve();
-                    return;
+        // Initialize Camera
+        async function initCamera(facingMode = 'environment') {
+            try {
+                if (stream) {
+                    stream.getTracks().forEach(track => track.stop());
                 }
-
-                window.initMapCallback = () => {
-                    initMap();
-                    resolve();
-                };
-
-                const script = document.createElement('script');
-                script.src = `https://maps.googleapis.com/maps/api/js?key=${GOOGLE_MAPS_API_KEY}&callback=initMapCallback&loading=async`;
-                script.async = true;
-                script.defer = true;
-                script.onerror = () => {
-                    console.error('Failed to load Google Maps API');
-                    updateStatus('Map unavailable', 'error');
-                    reject(new Error('Failed to load Google Maps API'));
-                };
-                
-                document.head.appendChild(script);
-            });
-        }
-
-        // Initialize Google Map with satellite view
-        function initMap() {
-            try {
-                const mapOptions = {
-                    zoom: 17, // Increased zoom for better satellite detail
-                    center: { lat: 16.9834, lng: 82.2527 },
-                    mapTypeId: 'satellite', // Ensure satellite view
-                    disableDefaultUI: true,
-                    zoomControl: false,
-                    mapTypeControl: false,
-                    scaleControl: false,
-                    streetViewControl: false,
-                    rotateControl: false,
-                    fullscreenControl: false,
-                    gestureHandling: 'none',
-                    styles: [] // Clear any custom styles that might interfere
-                };
-
-                map = new google.maps.Map(mapThumbnail, mapOptions);
-
-                // Custom marker for better visibility on satellite
-                marker = new google.maps.Marker({
-                    position: { lat: 16.9834, lng: 82.2527 },
-                    map: map,
-                    icon: {
-                        url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
-                            <svg width="30" height="30" viewBox="0 0 30 30" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                <circle cx="15" cy="15" r="12" fill="#FF0000" stroke="#FFFFFF" stroke-width="3"/>
-                                <circle cx="15" cy="15" r="6" fill="#FFFFFF"/>
-                                <circle cx="15" cy="15" r="3" fill="#FF0000"/>
-                            </svg>
-                        `),
-                        scaledSize: new google.maps.Size(30, 30),
-                        anchor: new google.maps.Point(15, 15)
-                    }
-                });                
-            } catch (error) {
-                console.error('Error initializing Google Maps:', error);
-                updateStatus('Map initialization failed', 'error');
-            }
-        }
-
-        // Initialize camera
-        async function initCamera() {
-            try {
                 const constraints = {
-                    video: {
-                        facingMode: currentCamera,
+                    video: { 
+                        facingMode: { ideal: facingMode },
                         width: { ideal: 1920 },
                         height: { ideal: 1080 }
-                    }
+                    },
+                    audio: true
                 };
-                
-                cameraStream = await navigator.mediaDevices.getUserMedia(constraints);
-                cameraView.srcObject = cameraStream;
-                updateStatus('Camera ready', 'success');
+                stream = await navigator.mediaDevices.getUserMedia(constraints);
+                cameraView.srcObject = stream;
+                statusIndicator.textContent = 'Camera Ready';
+                statusIndicator.className = 'status-indicator success';
             } catch (err) {
-                console.error("Camera error: ", err);
-                updateStatus('Camera access denied', 'error');
-                alert("Could not access the camera. Please check permissions and try again.");
+                console.error("Error accessing camera:", err);
+                statusIndicator.textContent = 'Camera Error';
+                statusIndicator.className = 'status-indicator error';
             }
         }
 
-        // Start tracking location
-        function startLocationTracking() {
-            if (!navigator.geolocation) {
-                addressInfo = "Geolocation not supported";
-                updateStatus('Location not supported', 'error');
-                updateLocationOverlay();
-                return;
-            }
+        // Location and Time
+        function updateOverlayInfo() {
+            // Time
+            timeText.textContent = new Date().toLocaleString();
 
-            const options = {
-                enableHighAccuracy: true,
-                timeout: 15000,
-                maximumAge: 30000
-            };
-
-            navigator.geolocation.getCurrentPosition(
-                async position => {
-                    await handleLocationSuccess(position);
+            // Location
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(pos => {
+                    const { latitude, longitude } = pos.coords;
+                    coordinatesText.textContent = `Lat: ${latitude.toFixed(5)}, Lng: ${longitude.toFixed(5)}`;
                     
-                    navigator.geolocation.watchPosition(
-                        handleLocationSuccess,
-                        handleLocationError,
-                        { enableHighAccuracy: true, maximumAge: 10000 }
-                    );
-                },
-                handleLocationError,
-                options
-            );
-        }
+                    addressText.textContent = `Location near ${latitude.toFixed(2)}, ${longitude.toFixed(2)}`;
 
-        // Handle successful location retrieval
-        async function handleLocationSuccess(position) {
-            currentLocation = {
-                lat: position.coords.latitude,
-                lng: position.coords.longitude,
-                accuracy: position.coords.accuracy,
-                timestamp: new Date(position.timestamp)
-            };
-            
-            updateStatus('Location found', 'success');
-            locationStatus = 'success';
-            
-            await getAddressFromCoordinates(currentLocation.lat, currentLocation.lng);
-            updateLocationOverlay();
-            updateMap();
-        }
-
-        // Handle location errors
-        function handleLocationError(error) {
-            console.error("Geolocation error: ", error);
-            
-            let errorMessage = "Location unavailable";
-            switch(error.code) {
-                case error.PERMISSION_DENIED:
-                    errorMessage = "Location access denied";
-                    break;
-                case error.POSITION_UNAVAILABLE:
-                    errorMessage = "Location unavailable";
-                    break;
-                case error.TIMEOUT:
-                    errorMessage = "Location timeout";
-                    break;
-            }
-            
-            addressInfo = errorMessage;
-            locationStatus = 'error';
-            updateStatus(errorMessage, 'error');
-            updateLocationOverlay();
-        }
-
-        // Get address from coordinates
-        async function getAddressFromCoordinates(lat, lng) {
-            try {
-                const response = await fetch(
-                    `https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&key=${GOOGLE_MAPS_API_KEY}`
-                );
-                if (response.ok) {
-                    const data = await response.json();
-                    if (data.results && data.results.length > 0) {
-                        addressInfo = data.results[0].formatted_address;
+                    // Update map thumbnail
+                    const mapUrl = `https://maps.google.com/maps?q=${latitude},${longitude}&hl=es;z=14&amp;output=embed`;
+                    if (!mapThumbnail.innerHTML.includes(mapUrl)) {
+                         mapThumbnail.innerHTML = `<iframe src="${mapUrl}" style="width:100%;height:100%;border:0;"></iframe>`;
                     }
-                }
-            } catch (error) {
-                console.error("Geocoding error:", error);
-                addressInfo = `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
-            }
-        }
-
-        // Update location text overlay to match Android app style
-        function updateLocationOverlay() {
-            if (currentLocation) {
-                // Extract city/area from address
-                const cityMatch = addressInfo.match(/([^,]+,\s*[^,]+,\s*[^,]+)/);
-                const cityPart = cityMatch ? cityMatch[0] : "Location Found";
-                
-                const dateStr = currentLocation.timestamp.toLocaleString('en-GB', {
-                    day: '2-digit',
-                    month: '2-digit',
-                    year: 'numeric',
-                    hour: '2-digit',
-                    minute: '2-digit',
-                    hour12: true,
-                    timeZoneName: 'short'
-                });
-                
-                //locationTitle.textContent = cityPart;
-                addressText.textContent = addressInfo;
-                coordinatesText.textContent = `Lat ${currentLocation.lat.toFixed(6)}° Long ${currentLocation.lng.toFixed(6)}°`;
-                timeText.textContent = dateStr;
+                    
+                }, (err) => {
+                    addressText.textContent = 'Location access denied.';
+                    console.warn(`Location ERROR(${err.code}): ${err.message}`);
+                }, { timeout: 10000 });
             } else {
-                //locationTitle.textContent = "Kakinada, Andhra Pradesh, India";
-                addressText.textContent = addressInfo;
-                coordinatesText.textContent = "Coordinates unavailable";
-                timeText.textContent = new Date().toLocaleString('en-GB', {
-                    day: '2-digit',
-                    month: '2-digit',
-                    year: 'numeric',
-                    hour: '2-digit',
-                    minute: '2-digit',
-                    hour12: true,
-                    timeZoneName: 'short'
-                });
+                addressText.textContent = 'Geolocation not supported.';
             }
         }
 
-        // Update Google Map position
-        function updateMap() {
-            if (currentLocation && map && marker) {
-                const position = { lat: currentLocation.lat, lng: currentLocation.lng };
-                map.setCenter(position);
-                marker.setPosition(position);
-                // Ensure satellite view is maintained
-                map.setMapTypeId('satellite');
-            }
-        }
-
-        // Capture and save photo
-        async function captureAndSavePhoto() {
-            if (!cameraStream) {
-                alert("Camera not available");
-                return;
-            }
-            
-            try {
-                savingIndicator.style.display = 'block';
-                
-                const context = photoCanvas.getContext('2d');
-                photoCanvas.width = cameraView.videoWidth;
-                photoCanvas.height = cameraView.videoHeight;
-                
-                context.drawImage(cameraView, 0, 0, photoCanvas.width, photoCanvas.height);
-                
-                await addOverlayToCanvas(context);
-                
-                const dateStr = new Date().toISOString()
-                    .replace(/[:.]/g, '-')
-                    .replace('T', '_')
-                    .substring(0, 19);
-                
-                const imageData = photoCanvas.toDataURL('image/jpeg', 0.9);
-                savePhotoToDevice(imageData, `OrthoCam_${dateStr}.jpg`);
-                
-                photoData.push({
-                    imageData: imageData,
-                    location: currentLocation,
-                    address: addressInfo,
-                    timestamp: new Date()
-                });
-                
-                photoResult.src = imageData;
-                photoResult.style.display = 'block';
-                cameraView.style.display = 'none';
-                
-                setTimeout(() => {
-                    photoResult.style.display = 'none';
-                    cameraView.style.display = 'block';
-                }, 1500);
-                
-            } catch (error) {
-                console.error("Error capturing/saving photo:", error);
-                alert("Error saving photo. Please try again.");
-            } finally {
-                savingIndicator.style.display = 'none';
-            }
-        }
-
-        async function addOverlayToCanvas(ctx) {
-            const canvas = ctx.canvas;
-
-            // Calculate overlay dimensions
-            const overlayHeight = 100;
-            const mapWidth = 160;
-            const mapHeight = 120;
-            const mapPosition = { x: 16, y: canvas.height - overlayHeight - 16 };
-            const overlayPosition = { x: mapWidth + 32, y: canvas.height - overlayHeight - 16 };
-            const overlayWidth = canvas.width - mapWidth - 48;
-
-            // Draw map thumbnail
-            await drawMapThumbnail(ctx, canvas, mapPosition);
-
-            // Draw overlay background
-            ctx.fillStyle = 'rgba(0, 0, 0, 0.60)';
-            ctx.fillRect(overlayPosition.x, overlayPosition.y, overlayWidth, overlayHeight);
-
-            // Draw text content matching Android app
-            ctx.fillStyle = 'white';
-            ctx.textBaseline = 'top';
-
-            let y = overlayPosition.y + 16;
-            const lineHeight = 24;
-
-            // Location title
-            /*ctx.font = 'bold 20px Roboto, Arial';
-            const cityMatch = addressInfo.match(/([^,]+,\s*[^,]+,\s*[^,]+)/);
-            const cityPart = cityMatch ? cityMatch[0] : "Location Found";
-            ctx.fillText(cityPart, overlayPosition.x + 16, y);
-            y += lineHeight;
-            */
-
-            // Address detail
-            ctx.font = '20px Roboto, Arial';
-            ctx.fillStyle = '#e0e0e0';
-            ctx.fillText(addressInfo, overlayPosition.x + 16, y);
-            y += lineHeight - 4;
-
-            // Coordinates
-            if (currentLocation) {
-                ctx.font = '14px Roboto, Arial';
-                ctx.fillStyle = '#b0b0b0';
-                ctx.fillText(`Lat ${currentLocation.lat.toFixed(6)}° Long ${currentLocation.lng.toFixed(6)}°`, overlayPosition.x + 16, y);
-                y += lineHeight;
-
-                // Timestamp
-                ctx.font = '18px Roboto, Arial';
-                ctx.fillStyle = '#e0e0e0';
-                const dateStr = currentLocation.timestamp.toLocaleString('en-GB', {
-                    day: '2-digit',
-                    month: '2-digit',
-                    year: 'numeric',
-                    hour: '2-digit',
-                    minute: '2-digit',
-                    hour12: true,
-                    timeZoneName: 'short'
-                });
-                ctx.fillText(dateStr, overlayPosition.x + 16, y);
-            }
-
-            // Draw app title on photo
-            /*
-            ctx.fillStyle = 'rgba(0,0,0,0.7)';
-            ctx.beginPath();
-            ctx.roundRect(overlayPosition.x + overlayWidth - 140, overlayPosition.y - 35, 160, 50, [10, 10, 10, 10]);
-            ctx.fill();
-            ctx.fillStyle = 'white';
-            ctx.font = '14px Roboto, Arial';
-            ctx.fillText('📍 GPS Map Camera', overlayPosition.x + overlayWidth - 130, overlayPosition.y - 10);
-            */
-        }
-
-        // Enhanced map thumbnail drawing with proper satellite view
-        async function drawMapThumbnail(ctx, canvas, position) {
-            const { x, y } = position;
-            const mapWidth = 140;
-            const mapHeight = 100;
-            
-            if (currentLocation) {
-                try {
-                    const zoom = 17; // Higher zoom for better satellite detail
-                    const staticMapUrl = `https://maps.googleapis.com/maps/api/staticmap?` +
-                        `center=${currentLocation.lat},${currentLocation.lng}&` +
-                        `zoom=${zoom}&` +
-                        `size=${mapWidth}x${mapHeight}&` +
-                        `maptype=satellite&` + // Explicitly set satellite
-                        `markers=color:red%7Csize:mid%7C${currentLocation.lat},${currentLocation.lng}&` +
-                        `scale=2&` + // Higher resolution
-                        `key=${GOOGLE_MAPS_API_KEY}`;
-                    
-                    const mapImage = new Image();
-                    mapImage.crossOrigin = 'anonymous';
-                    
-                    await new Promise((resolve) => {
-                        mapImage.onload = () => {
-                            // Draw the satellite map
-                            ctx.drawImage(mapImage, x, y, mapWidth, mapHeight);
-                            
-                            // Draw border
-                            ctx.strokeStyle = 'rgba(255,255,255,0.9)';
-                            ctx.lineWidth = 2;
-                            ctx.strokeRect(x, y, mapWidth, mapHeight);
-                            
-                            resolve();
-                        };
-                        
-                        mapImage.onerror = () => {
-                            drawMapFallback(ctx, canvas, position);
-                            resolve();
-                        };
-                        
-                        mapImage.src = staticMapUrl;
-                    });
-                    
-                } catch (error) {
-                    console.error("Error rendering map thumbnail:", error);
-                    drawMapFallback(ctx, canvas, position);
-                }
+        // Start/Stop Recording
+        recordBtn.addEventListener('click', () => {
+            if (isRecording) {
+                stopRecording();
             } else {
-                console.log('Fallback thumbnail being drawn')
-                drawMapFallback(ctx, canvas, position);
-            }
-        }
-
-        // Enhanced fallback map drawing
-        function drawMapFallback(ctx, canvas, position) {
-            const { x, y } = position;
-            const mapWidth = 140;
-            const mapHeight = 100;
-            
-            // Draw satellite-like background
-            ctx.fillStyle = '#2a4d3a';
-            ctx.fillRect(x, y, mapWidth, mapHeight);
-            
-            // Draw terrain patterns
-            ctx.fillStyle = '#1a3d2a';
-            for (let i = 0; i < 8; i++) {
-                const rectX = x + (i * 20) + Math.random() * 10;
-                const rectY = y + Math.random() * mapHeight;
-                const rectW = 15 + Math.random() * 10;
-                const rectH = 8 + Math.random() * 8;
-                ctx.fillRect(rectX, rectY, rectW, rectH);
-            }
-            
-            // Draw roads/paths
-            ctx.strokeStyle = '#6b7280';
-            ctx.lineWidth = 2;
-            ctx.beginPath();
-            ctx.moveTo(x, y + mapHeight * 0.3);
-            ctx.lineTo(x + mapWidth, y + mapHeight * 0.4);
-            ctx.moveTo(x + mapWidth * 0.6, y);
-            ctx.lineTo(x + mapWidth * 0.7, y + mapHeight);
-            ctx.stroke();
-            
-            // Draw location marker
-            const markerX = x + (mapWidth / 2);
-            const markerY = y + (mapHeight / 2);
-            
-            // Marker background
-            ctx.fillStyle = '#ffffff';
-            ctx.beginPath();
-            ctx.arc(markerX, markerY, 8, 0, 2 * Math.PI);
-            ctx.fill();
-            
-            // Marker center
-            ctx.fillStyle = '#dc2626';
-            ctx.beginPath();
-            ctx.arc(markerX, markerY, 5, 0, 2 * Math.PI);
-            ctx.fill();
-            
-            // Coordinates if available
-            if (currentLocation) {
-                ctx.fillStyle = 'white';
-                ctx.font = '10px Roboto, Arial';
-                const coordText = `${currentLocation.lat.toFixed(3)}, ${currentLocation.lng.toFixed(3)}`;
-                ctx.fillText(coordText, x + 4, y + 12);
-            }
-            
-            // Draw border
-            ctx.strokeStyle = 'rgba(255,255,255,0.9)';
-            ctx.lineWidth = 2;
-            ctx.strokeRect(x, y, mapWidth, mapHeight);
-            
-            // Google branding
-            ctx.fillStyle = 'rgba(0,0,0,0.8)';
-            ctx.fillRect(x + 4, y + mapHeight - 24, 60, 20);
-            ctx.fillStyle = 'white';
-            ctx.font = '12px Roboto, Arial';
-            ctx.fillText('Google', x + 8, y + mapHeight - 10);
-        }
-
-        // Save photo to device
-        function savePhotoToDevice(dataUrl, fileName) {
-            const link = document.createElement('a');
-            link.download = fileName;
-            link.href = dataUrl;
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-        }
-
-       // Upload existing photo
-        function uploadPhoto() {
-            const input = document.createElement('input');
-            input.type = 'file';
-            input.accept = 'image/*';
-            
-            input.onchange = async e => {
-                const file = e.target.files[0];
-                if (file) {
-                    const reader = new FileReader();
-                    reader.onload = async event => {
-                        const img = new Image();
-                        img.onload = async () => {
-                            photoCanvas.width = img.width;
-                            photoCanvas.height = img.height;
-                            
-                            const ctx = photoCanvas.getContext('2d');
-                            ctx.drawImage(img, 0, 0);
-                            
-                            await addOverlayToCanvas(ctx);
-                            
-                            const imageData = photoCanvas.toDataURL('image/jpeg', 0.9);
-                            savePhotoToDevice(imageData, `OrthoCam_${new Date().getTime()}.jpg`);
-                            
-                            photoData.push({
-                                imageData: imageData,
-                                location: currentLocation,
-                                address: addressInfo,
-                                timestamp: new Date()
-                            });
-                        };
-                        img.src = event.target.result;
-                    };
-                    reader.readAsDataURL(file);
-                }
-            };
-            
-            input.click();
-        }
-
-        // Toggle between front and back camera
-        async function toggleCamera() {
-            if (cameraStream) {
-                cameraStream.getTracks().forEach(track => track.stop());
-            }
-            
-            currentCamera = currentCamera === 'user' ? 'environment' : 'user';
-            await initCamera();
-            
-            if (photoResult.style.display === 'block') {
-                photoResult.style.display = 'none';
-                cameraView.style.display = 'block';
-            }
-        }
-
-        // Initialize the app when DOM is loaded
-        document.addEventListener('DOMContentLoaded', initApp);
-
-        // Handle page visibility changes
-        document.addEventListener('visibilitychange', () => {
-            if (document.visibilityState === 'visible' && !currentLocation) {
-                // Retry location when page becomes visible
-                startLocationTracking();
+                startRecording();
             }
         });
+
+        function startRecording() {
+            if (!stream) {
+                alert('Camera not ready.');
+                return;
+            }
+            
+            // Try MP4 first, then fallback to WebM
+            let options;
+            if (MediaRecorder.isTypeSupported('video/mp4; codecs="avc1.42E01E,mp4a.40.2"')) {
+                options = { mimeType: 'video/mp4; codecs="avc1.42E01E,mp4a.40.2"' };
+            } else if (MediaRecorder.isTypeSupported('video/mp4')) {
+                options = { mimeType: 'video/mp4' };
+            } else {
+                options = { mimeType: 'video/webm' };
+            }
+            
+            currentMimeType = options.mimeType;
+            
+            try {
+                mediaRecorder = new MediaRecorder(stream, options);
+            } catch (e) {
+                console.error('Exception while creating MediaRecorder:', e);
+                alert(`Error creating MediaRecorder: ${e.toString()}`);
+                return;
+            }
+
+            recordedChunks = [];
+            mediaRecorder.ondataavailable = event => {
+                if (event.data.size > 0) {
+                    recordedChunks.push(event.data);
+                }
+            };
+            mediaRecorder.onstop = handleRecordingStop;
+
+            mediaRecorder.start();
+            isRecording = true;
+            recordBtn.classList.add('recording');
+            recordBtn.title = "Stop Recording";
+            const format = currentMimeType.includes('mp4') ? 'MP4' : 'WebM';
+            statusIndicator.textContent = `Recording ${format}...`;
+            statusIndicator.className = 'status-indicator warning';
+        }
+
+        function stopRecording() {
+            if (mediaRecorder) {
+                mediaRecorder.stop();
+                isRecording = false;
+                recordBtn.classList.remove('recording');
+                recordBtn.title = "Start Recording";
+                statusIndicator.textContent = 'Processing...';
+            }
+        }
+
+        function handleRecordingStop() {
+            savingIndicator.style.display = 'block';
+            const blob = new Blob(recordedChunks, { type: currentMimeType });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            document.body.appendChild(a);
+            a.style = 'display: none';
+            a.href = url;
+
+            const fileExtension = currentMimeType.includes('mp4') ? 'mp4' : 'webm';
+            a.download = `recording-${new Date().toISOString().replace(/[:.]/g, '-')}.${fileExtension}`;
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+            
+            setTimeout(() => {
+                savingIndicator.style.display = 'none';
+                statusIndicator.textContent = `Video saved as ${fileExtension.toUpperCase()}`;
+                statusIndicator.className = 'status-indicator success';
+            }, 1000);
+        }
+        
+        // Capture Photo
+        captureBtn.addEventListener('click', () => {
+            if (!stream) {
+                alert('Camera not ready.');
+                return;
+            }
+            
+            savingIndicator.style.display = 'block';
+            const canvas = document.getElementById('photo-canvas');
+            const context = canvas.getContext('2d');
+            canvas.width = cameraView.videoWidth;
+            canvas.height = cameraView.videoHeight;
+            context.drawImage(cameraView, 0, 0, canvas.width, canvas.height);
+            
+            canvas.toBlob((blob) => {
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.style = 'display: none';
+                a.href = url;
+                a.download = `photo-${new Date().toISOString().replace(/[:.]/g, '-')}.jpg`;
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+                document.body.removeChild(a);
+                
+                setTimeout(() => {
+                    savingIndicator.style.display = 'none';
+                    statusIndicator.textContent = 'Photo saved!';
+                    statusIndicator.className = 'status-indicator success';
+                }, 1000);
+            }, 'image/jpeg', 0.9);
+        });
+
+        // Switch Camera
+        switchCameraBtn.addEventListener('click', () => {
+            currentFacingMode = currentFacingMode === 'environment' ? 'user' : 'environment';
+            initCamera(currentFacingMode);
+        });
+
+        // Initial setup
+        initCamera(currentFacingMode);
+        updateOverlayInfo();
+        setInterval(updateOverlayInfo, 5000); // Update every 5 seconds
+    });
     </script>
 </body>
 </html>
