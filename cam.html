@@ -696,6 +696,7 @@ let videoCtx = videoCanvas.getContext('2d');
 let recordingChunks = [];
 let recorder = null;
 let isRecording = false;
+let currentMimeType = '';
 
 function startRecording() {
     if (!cameraStream) {
