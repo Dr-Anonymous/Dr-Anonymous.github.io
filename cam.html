@@ -702,7 +702,16 @@ function startRecording() {
         alert("Camera not available");
         return;
     }
-
+    let options;
+    if (MediaRecorder.isTypeSupported('video/mp4; codecs="avc1.42E01E,mp4a.40.2"')) {
+    options = { mimeType: 'video/mp4; codecs="avc1.42E01E,mp4a.40.2"' };
+    } else if (MediaRecorder.isTypeSupported('video/mp4')) {
+    options = { mimeType: 'video/mp4' };
+    } else {
+    options = { mimeType: 'video/webm' };
+    }
+    
+    currentMimeType = options.mimeType;
     isRecording = true;
     recordBtn.textContent = '⏹';
     updateStatus('Recording started...', 'success');
@@ -712,7 +721,7 @@ function startRecording() {
 
     recordingChunks = [];
     const stream = videoCanvas.captureStream(30);
-    recorder = new MediaRecorder(stream, { mimeType: 'video/webm' });
+    recorder = new MediaRecorder(stream, options);
 
     recorder.ondataavailable = e => recordingChunks.push(e.data);
     recorder.onstop = saveRecordedVideo;
@@ -740,11 +749,11 @@ function stopRecording() {
 }
 
 function saveRecordedVideo() {
-    const blob = new Blob(recordingChunks, { type: 'video/webm' });
+    const blob = new Blob(recordingChunks, { type: currentMimeType });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `OrthoCam_${Date.now()}.webm`;
+    a.download = `OrthoCam_` + Date.now() + (currentMimeType.includes('mp4') ? '.mp4' : '.webm');
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
