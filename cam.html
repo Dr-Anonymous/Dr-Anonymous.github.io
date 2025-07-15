@@ -217,7 +217,7 @@
             </div>
             <div id="map-thumbnail"></div>
         </div>
-        <div id="controls">
+        <div id="controls" style="display:none;">
             <button id="record-toggle" title="Start Recording">🎥</button>
             <button id="capture-btn" title="Capture">📷</button>
             <button id="upload-btn" title="Upload" style="display: none;">📁</button>
@@ -236,7 +236,7 @@
         let addressInfo = "Getting location...";
         let locationStatus = 'getting';
 
-        const GOOGLE_MAPS_API_KEY = 'AIzaSyBxiP-VOE5ROHLNKnZRwJEYpbKtZmHtWa0'; // Replace with your actual API key
+        const GOOGLE_MAPS_API_KEY = 'AIzaSyBxiP-VOE5ROHLNKnZRwJEYpbKtZmHtWa0';
 
         // DOM Elements
         const cameraView = document.getElementById('camera-view');
@@ -252,9 +252,8 @@
         const mapThumbnail = document.getElementById('map-thumbnail');
         const savingIndicator = document.getElementById('saving-indicator');
         const statusIndicator = document.getElementById('status-indicator');
-        
         const recordBtn = document.getElementById('record-toggle');
-
+        const controls = document.getElementById("controls");
 
         
         // Initialize the application
@@ -265,10 +264,6 @@
             
             loadGoogleMapsAPI();
             startLocationTracking();
-
-            captureBtn.disabled = true;
-            uploadBtn.disabled = true;
-            recordBtn.disabled = true;
             
             // Set up event listeners
             captureBtn.addEventListener('click', captureAndSavePhoto);
@@ -856,9 +851,7 @@ async function handleLocationSuccess(position) {
     updateLocationOverlay();
     updateMap();
     // Enable buttons once location is retrieved
-    captureBtn.disabled = false;
-    uploadBtn.disabled = false;
-    recordBtn.disabled = false;
+    controls.style.display = "block";
 }
 
 // Update addOverlayToCanvas to use cached data
