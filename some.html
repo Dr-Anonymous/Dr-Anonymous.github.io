@@ -1,0 +1,17 @@
+<button onclick="startOAuth()">Authorize with Google</button>
+<script>
+const clientId = '480686153279-nt1t8kah6jhgvbi4e5hvj63m1342sgml.apps.googleusercontent.com';
+const redirectUri = 'https://orthosam.com/some-callback.html';
+const scope = 'https://www.googleapis.com/auth/youtube';
+
+function startOAuth() {
+  const authUrl = 'https://accounts.google.com/o/oauth2/v2/auth' +
+    `?client_id=${clientId}` +
+    `&redirect_uri=${encodeURIComponent(redirectUri)}` +
+    '&response_type=code' +
+    '&access_type=offline' +
+    '&prompt=consent' +
+    `&scope=${encodeURIComponent(scope)}`;
+  window.location = authUrl;
+}
+</script>
