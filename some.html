@@ -2,7 +2,12 @@
 <script>
 const clientId = '480686153279-nt1t8kah6jhgvbi4e5hvj63m1342sgml.apps.googleusercontent.com';
 const redirectUri = 'https://orthosam.com/some-callback.html';
-const scope = 'https://www.googleapis.com/auth/youtube';
+const scopes = [
+      'https://www.googleapis.com/auth/calendar',
+      'https://www.googleapis.com/auth/spreadsheets',
+      'https://www.googleapis.com/auth/drive',
+      'https://www.googleapis.com/auth/documents'
+    ];
 
 function startOAuth() {
   const authUrl = 'https://accounts.google.com/o/oauth2/v2/auth' +
@@ -11,7 +16,7 @@ function startOAuth() {
     '&response_type=code' +
     '&access_type=offline' +
     '&prompt=consent' +
-    `&scope=${encodeURIComponent(scope)}`;
+    `&scope=${encodeURIComponent(scopes)}`;
   window.location = authUrl;
 }
 </script>
