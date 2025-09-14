@@ -1,0 +1,9 @@
+{
+  "name": "MIDI Patch Changer",
+  "short_name": "PatchChanger",
+  "start_url": "index.html",
+  "display": "standalone",
+  "background_color": "#111111",
+  "theme_color": "#222222",
+  "icons": []
+}
