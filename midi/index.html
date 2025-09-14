@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MIDI Patch Changer</title>
+
+  <!-- PWA manifest -->
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#222222" />
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #111;
+      color: #fff;
+      text-align: center;
+      margin: 0;
+      padding: 20px;
+    }
+    h1 {
+      margin-bottom: 20px;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 15px;
+    }
+    button {
+      padding: 20px;
+      font-size: 1.2em;
+      border: none;
+      border-radius: 12px;
+      background: #444;
+      color: #fff;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    button:hover {
+      background: #666;
+    }
+  </style>
+</head>
+<body>
+  <h1>MIDI Patch Changer</h1>
+  <div class="grid" id="buttons"></div>
+
+  <script>
+    const patches = [
+      "SQARE LEED",
+      "BAGPIPER",
+      "BELLS",
+      "SANTOOR",
+      "VIENA STRINGS",
+      "OLD FLUTE",
+      "SLOW STRING",
+      "SYNTH PRASE",
+      "OCT STNG - GUITAR",
+      "E. PIANO",
+      "STACCATO",
+      "DIST. GUITAR",
+      "SLOW - VIOLIN"
+    ];
+
+    let output;
+
+    // Request MIDI access
+    navigator.requestMIDIAccess().then(midiAccess => {
+      const outputs = Array.from(midiAccess.outputs.values());
+      if (outputs.length > 0) {
+        output = outputs[0];
+        console.log("Connected to:", output.name);
+      } else {
+        alert("No MIDI device found!");
+      }
+    });
+
+    function sendProgramChange(program, channel = 0) {
+      if (!output) {
+        alert("No MIDI device connected.");
+        return;
+      }
+      const status = 0xC0 | (channel & 0x0F);
+      output.send([status, program]);
+      console.log("Sent PC", program, "on channel", channel + 1);
+    }
+
+    // Create buttons dynamically
+    const container = document.getElementById("buttons");
+    patches.forEach((label, index) => {
+      const btn = document.createElement("button");
+      btn.innerText = label;
+      btn.onclick = () => sendProgramChange(index + 1); // Auto-map: first label = PC 1
+      container.appendChild(btn);
+    });
+  </script>
+</body>
+</html>
