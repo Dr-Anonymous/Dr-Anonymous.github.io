@@ -1,98 +1,45 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>MIDI Patch Changer</title>
-
-  <!-- PWA manifest -->
-  <link rel="manifest" href="manifest.json">
-  <meta name="theme-color" content="#222222" />
-
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: #111;
-      color: #fff;
-      text-align: center;
-      margin: 0;
-      padding: 20px;
-    }
-    h1 {
-      margin-bottom: 20px;
-    }
-    .grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-      gap: 15px;
-    }
-    button {
-      padding: 20px;
-      font-size: 1.2em;
-      border: none;
-      border-radius: 12px;
-      background: #444;
-      color: #fff;
-      cursor: pointer;
-      transition: background 0.2s;
-    }
-    button:hover {
-      background: #666;
-    }
-  </style>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>MIDI Patch Changer</title>
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#121212" />
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <h1>MIDI Patch Changer</h1>
-  <div class="grid" id="buttons"></div>
+    <h1>MIDI Patch Changer</h1>
 
-  <script>
-    const patches = [
-      "SQARE LEED",
-      "BAGPIPER",
-      "BELLS",
-      "SANTOOR",
-      "VIENA STRINGS",
-      "OLD FLUTE",
-      "SLOW STRING",
-      "SYNTH PRASE",
-      "OCT STNG - GUITAR",
-      "E. PIANO",
-      "STACCATO",
-      "DIST. GUITAR",
-      "SLOW - VIOLIN"
-    ];
+    <div class="controls">
+        <button id="add-btn" style="display:none;">Add Patch</button>
+        <button id="export-btn">Export</button>
+        <label for="file-input" class="file-input-label">Import</label>
+        <input type="file" id="file-input" accept=".json,.txt">
 
-    let output;
+        <span>Edit Mode</span>
+        <label class="switch">
+            <input type="checkbox" id="edit-mode-toggle">
+            <span class="slider"></span>
+        </label>
+    </div>
 
-    // Request MIDI access
-    navigator.requestMIDIAccess().then(midiAccess => {
-      const outputs = Array.from(midiAccess.outputs.values());
-      if (outputs.length > 0) {
-        output = outputs[0];
-        console.log("Connected to:", output.name);
-      } else {
-        alert("No MIDI device found!");
-      }
-    });
+    <div class="grid" id="buttons"></div>
 
-    function sendProgramChange(program, channel = 0) {
-      if (!output) {
-        alert("No MIDI device connected.");
-        return;
-      }
-      const status = 0xC0 | (channel & 0x0F);
-      output.send([status, program]);
-      console.log("Sent PC", program, "on channel", channel + 1);
-    }
+    <!-- Modal for editing patch details -->
+    <div id="edit-modal" class="modal">
+        <div class="modal-content">
+            <label for="patch-name">Patch Name:</label>
+            <input type="text" id="patch-name" placeholder="Enter patch name">
 
-    // Create buttons dynamically
-    const container = document.getElementById("buttons");
-    patches.forEach((label, index) => {
-      const btn = document.createElement("button");
-      btn.innerText = label;
-      btn.onclick = () => sendProgramChange(index + 1); // Auto-map: first label = PC 1
-      container.appendChild(btn);
-    });
-  </script>
+            <label for="program-change">Program Change (0-127):</label>
+            <input type="number" id="program-change" min="0" max="127" placeholder="Enter PC #">
+
+            <button id="save-patch-btn">Save</button>
+            <button id="cancel-edit-btn">Cancel</button>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
 </body>
 </html>
