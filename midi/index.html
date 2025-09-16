@@ -12,7 +12,6 @@
     <h1>MIDI Patch Changer</h1>
 
     <div class="controls">
-        <button id="add-btn" style="display:none;">Add Patch</button>
         <button id="export-btn">Export</button>
         <label for="file-input" class="file-input-label">Import</label>
         <input type="file" id="file-input" accept=".json,.txt">
@@ -26,17 +25,33 @@
 
     <div class="grid" id="buttons"></div>
 
-    <!-- Modal for editing patch details -->
-    <div id="edit-modal" class="modal">
-        <div class="modal-content">
-            <label for="patch-name">Patch Name:</label>
-            <input type="text" id="patch-name" placeholder="Enter patch name">
-
-            <label for="program-change">Program Change (0-127):</label>
-            <input type="number" id="program-change" min="0" max="127" placeholder="Enter PC #">
-
-            <button id="save-patch-btn">Save</button>
-            <button id="cancel-edit-btn">Cancel</button>
+    <!-- Edit mode overlay with table -->
+    <div id="edit-overlay" class="modal">
+        <div class="modal-content-large">
+            <h2>Edit Patches</h2>
+            <div id="edit-table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Color</th>
+                            <th>PC #</th>
+                            <th>Channel</th>
+                            <th>CC #</th>
+                            <th>CC Val</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="edit-table-body">
+                        <!-- Rows will be dynamically inserted here -->
+                    </tbody>
+                </table>
+            </div>
+            <div class="edit-controls">
+                <button id="add-row-btn">Add New Patch</button>
+                <button id="save-table-btn">Save and Close</button>
+                <button id="cancel-table-btn">Cancel</button>
+            </div>
         </div>
     </div>
 
