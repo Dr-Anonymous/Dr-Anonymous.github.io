@@ -4,6 +4,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const editModeToggle = document.getElementById('edit-mode-toggle');
     const exportBtn = document.getElementById('export-btn');
     const fileInput = document.getElementById('file-input');
+    const midiOutputSelector = document.getElementById('midi-output-selector');
     const editOverlay = document.getElementById('edit-overlay');
     const editTableBody = document.getElementById('edit-table-body');
     const addRowBtn = document.getElementById('add-row-btn');
@@ -12,6 +13,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- State ---
     let midiOutput = null;
+    let midiOutputs = [];
     let patches = [];
     let isEditMode = false;
 
@@ -42,11 +44,24 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function onMIDISuccess(midiAccess) {
-        const outputs = Array.from(midiAccess.outputs.values());
-        if (outputs.length > 0) {
-            midiOutput = outputs[0];
-            console.log(`Connected to MIDI output: ${midiOutput.name}`);
+        midiOutputs = Array.from(midiAccess.outputs.values());
+        midiOutputSelector.innerHTML = ''; // Clear previous options
+
+        if (midiOutputs.length > 0) {
+            midiOutputs.forEach(output => {
+                const option = document.createElement('option');
+                option.value = output.id;
+                option.textContent = output.name;
+                midiOutputSelector.appendChild(option);
+            });
+
+            // Auto-select the first device
+            midiOutput = midiOutputs[0];
+            console.log(`Auto-connected to MIDI output: ${midiOutput.name}`);
         } else {
+            const option = document.createElement('option');
+            option.textContent = 'No MIDI devices found';
+            midiOutputSelector.appendChild(option);
             console.warn("No MIDI output devices found.");
         }
     }
@@ -65,7 +80,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (patch.pc !== null && patch.pc >= 0 && patch.pc <= 127) {
             const pcStatus = 0xC0 | (channel & 0x0F);
             midiOutput.send([pcStatus, patch.pc]);
-            console.log(`Sent PC ${patch.pc} on channel ${channel + 1}`);
+            console.log(`Sent PC ${patch.pc} on channel ${channel + 1} to ${midiOutput.name}`);
         }
         // Send Control Change if defined
         if (patch.cc && patch.cc.number !== null && patch.cc.value !== null &&
@@ -73,7 +88,7 @@ document.addEventListener('DOMContentLoaded', () => {
             patch.cc.value >= 0 && patch.cc.value <= 127) {
             const ccStatus = 0xB0 | (channel & 0x0F);
             midiOutput.send([ccStatus, patch.cc.number, patch.cc.value]);
-            console.log(`Sent CC ${patch.cc.number}:${patch.cc.value} on channel ${channel + 1}`);
+            console.log(`Sent CC ${patch.cc.number}:${patch.cc.value} on channel ${channel + 1} to ${midiOutput.name}`);
         }
     }
 
@@ -239,6 +254,11 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // --- Event Listeners ---
+    midiOutputSelector.addEventListener('change', (e) => {
+        const selectedId = e.target.value;
+        midiOutput = midiOutputs.find(output => output.id === selectedId);
+        console.log(`MIDI output changed to: ${midiOutput.name}`);
+    });
     editModeToggle.addEventListener('change', toggleEditMode);
     saveTableBtn.addEventListener('click', saveTableChanges);
     cancelTableBtn.addEventListener('click', () => {
