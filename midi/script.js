@@ -19,19 +19,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- Default Data ---
     const defaultPatches = [
-        { id: Date.now() + 1, name: "SQARE LEED", pc: 1, channel: 0, cc: { number: null, value: null }, color: "#ff6347" },
-        { id: Date.now() + 2, name: "BAGPIPER", pc: 2, channel: 0, cc: { number: null, value: null }, color: "#ff47ab" },
-        { id: Date.now() + 3, name: "BELLS", pc: 3, channel: 0, cc: { number: null, value: null }, color: "#ab47ff" },
-        { id: Date.now() + 4, name: "SANTOOR", pc: 4, channel: 0, cc: { number: null, value: null }, color: "#477bff" },
-        { id: Date.now() + 5, name: "VIENA STRINGS", pc: 5, channel: 0, cc: { number: null, value: null }, color: "#47d3ff" },
-        { id: Date.now() + 6, name: "OLD FLUTE", pc: 6, channel: 0, cc: { number: null, value: null }, color: "#47ffad" },
-        { id: Date.now() + 7, name: "SLOW STRING", pc: 7, channel: 0, cc: { number: null, value: null }, color: "#adff47" },
-        { id: Date.now() + 8, name: "SYNTH PRASE", pc: 8, channel: 0, cc: { number: null, value: null }, color: "#ffd347" },
-        { id: Date.now() + 9, name: "OCT STNG - GUITAR", pc: 9, channel: 0, cc: { number: null, value: null }, color: "#ff8c47" },
-        { id: Date.now() + 10, name: "E. PIANO", pc: 10, channel: 0, cc: { number: null, value: null }, color: "#d8bfd8" },
-        { id: Date.now() + 11, name: "STACCATO", pc: 11, channel: 0, cc: { number: null, value: null }, color: "#b0c4de" },
-        { id: Date.now() + 12, name: "DIST. GUITAR", pc: 12, channel: 0, cc: { number: null, value: null }, color: "#20b2aa" },
-        { id: Date.now() + 13, name: "SLOW - VIOLIN", pc: 13, channel: 0, cc: { number: null, value: null }, color: "#6a5acd" }
+        { "id": 1758043261163, "name": "Chorus", "color": "#ff6347", "pc": 94, "channel": 15, "cc": { "number": null, "value": null } },
+        { "id": 1758043261164, "name": "Bells", "color": "#ff47ab", "pc": 49, "channel": 15, "cc": { "number": null, "value": null } },
+        { "id": 1758043261165, "name": "Trumpet", "color": "#ab47ff", "pc": 42, "channel": 15, "cc": { "number": null, "value": null } },
+        { "id": 1758043261166, "name": "Solid Guitar", "color": "#477bff", "pc": 33, "channel": 15, "cc": { "number": null, "value": null } },
+        { "id": 1758043261167, "name": "Old Flute", "color": "#47d3ff", "pc": 23, "channel": 15, "cc": { "number": null, "value": null } },
+        { "id": 1758043261168, "name": "Viola", "color": "#698c7c", "pc": 22, "channel": 15, "cc": { "number": null, "value": null } },
+        { "id": 1758043261169, "name": "Alto Sax", "color": "#556048", "pc": 25, "channel": 15, "cc": { "number": null, "value": null } },
+        { "id": 1758043261170, "name": "Dist. Guitar", "color": "#937d34", "pc": 78, "channel": 15, "cc": { "number": null, "value": null } },
+        { "id": 1758043261171, "name": "Vienna Strings", "color": "#ff8c47", "pc": 73, "channel": 15, "cc": { "number": null, "value": null } },
+        { "id": 1758043261172, "name": "Dulcimer", "color": "#795d79", "pc": 0, "channel": 15, "cc": { "number": null, "value": null } },
+        { "id": 1758043261173, "name": "Shennai", "color": "#474533", "pc": 10, "channel": 15, "cc": { "number": null, "value": null } },
+        { "id": 1758043261174, "name": "Piano Strings", "color": "#20b2aa", "pc": 1, "channel": 15, "cc": { "number": null, "value": null } },
+        { "id": 1758043261175, "name": "Sqare Lead", "color": "#6a5acd", "pc": 11, "channel": 15, "cc": { "number": null, "value": null } }
     ];
 
     // --- MIDI Initialization & Sending ---
