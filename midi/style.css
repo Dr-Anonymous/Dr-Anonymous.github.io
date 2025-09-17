@@ -194,3 +194,8 @@ td input[type="color"] {
     font-size: 1em;
     cursor: pointer;
 }
+
+.duplicate-highlight {
+    border: 2px dashed #ff4d4d;
+    box-shadow: 0 0 10px #ff4d4d;
+}

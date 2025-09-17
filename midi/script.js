@@ -106,11 +106,13 @@ document.addEventListener('DOMContentLoaded', () => {
             color: patch.color ?? `#${Math.floor(Math.random()*16777215).toString(16).padStart(6, '0')}`
         }));
         renderButtons();
+        highlightDuplicates();
     }
 
     function savePatches() {
         localStorage.setItem('midiPatches', JSON.stringify(patches));
         renderButtons();
+        highlightDuplicates();
     }
 
     // --- Main UI Rendering ---
@@ -123,6 +125,50 @@ document.addEventListener('DOMContentLoaded', () => {
             btn.style.backgroundColor = patch.color;
             btn.onclick = () => sendMidiMessages(patch);
             buttonsContainer.appendChild(btn);
+        });
+    }
+
+    function highlightDuplicates() {
+        // First, clear any existing highlights
+        document.querySelectorAll('.grid button').forEach(btn => btn.classList.remove('duplicate-highlight'));
+
+        const pcCounts = new Map();
+        const ccCounts = new Map();
+
+        // Count occurrences of each PC and CC value
+        patches.forEach(patch => {
+            if (patch.pc !== null) {
+                pcCounts.set(patch.pc, (pcCounts.get(patch.pc) || 0) + 1);
+            }
+            if (patch.cc && patch.cc.number !== null && patch.cc.value !== null) {
+                const ccKey = `${patch.cc.number}-${patch.cc.value}`;
+                ccCounts.set(ccKey, (ccCounts.get(ccKey) || 0) + 1);
+            }
+        });
+
+        // Find which values are duplicates
+        const duplicatePcs = [...pcCounts.keys()].filter(pc => pcCounts.get(pc) > 1);
+        const duplicateCcs = [...ccCounts.keys()].filter(ccKey => ccCounts.get(ccKey) > 1);
+
+        // Apply highlight class
+        patches.forEach((patch, index) => {
+            let isDuplicate = false;
+            if (patch.pc !== null && duplicatePcs.includes(patch.pc)) {
+                isDuplicate = true;
+            }
+            if (patch.cc && patch.cc.number !== null && patch.cc.value !== null) {
+                const ccKey = `${patch.cc.number}-${patch.cc.value}`;
+                if (duplicateCcs.includes(ccKey)) {
+                    isDuplicate = true;
+                }
+            }
+
+            if (isDuplicate) {
+                const button = buttonsContainer.children[index];
+                if (button) {
+                    button.classList.add('duplicate-highlight');
+                }
+            }
         });
     }
 
