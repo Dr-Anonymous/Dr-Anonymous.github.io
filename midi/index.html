@@ -1,98 +1,61 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>MIDI Patch Changer</title>
-
-  <!-- PWA manifest -->
-  <link rel="manifest" href="manifest.json">
-  <meta name="theme-color" content="#222222" />
-
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: #111;
-      color: #fff;
-      text-align: center;
-      margin: 0;
-      padding: 20px;
-    }
-    h1 {
-      margin-bottom: 20px;
-    }
-    .grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-      gap: 15px;
-    }
-    button {
-      padding: 20px;
-      font-size: 1.2em;
-      border: none;
-      border-radius: 12px;
-      background: #444;
-      color: #fff;
-      cursor: pointer;
-      transition: background 0.2s;
-    }
-    button:hover {
-      background: #666;
-    }
-  </style>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>MIDI Patch Changer</title>
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#121212" />
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <h1>MIDI Patch Changer</h1>
-  <div class="grid" id="buttons"></div>
+    <h1>MIDI Patch Changer</h1>
 
-  <script>
-    const patches = [
-      "SQARE LEED",
-      "BAGPIPER",
-      "BELLS",
-      "SANTOOR",
-      "VIENA STRINGS",
-      "OLD FLUTE",
-      "SLOW STRING",
-      "SYNTH PRASE",
-      "OCT STNG - GUITAR",
-      "E. PIANO",
-      "STACCATO",
-      "DIST. GUITAR",
-      "SLOW - VIOLIN"
-    ];
+    <div class="controls">
+        <select id="midi-output-selector"></select>
+        <button id="export-btn">Export</button>
+        <label for="file-input" class="file-input-label">Import</label>
+        <input type="file" id="file-input" accept=".json,.txt">
 
-    let output;
+        <span>Edit Mode</span>
+        <label class="switch">
+            <input type="checkbox" id="edit-mode-toggle">
+            <span class="slider"></span>
+        </label>
+    </div>
 
-    // Request MIDI access
-    navigator.requestMIDIAccess().then(midiAccess => {
-      const outputs = Array.from(midiAccess.outputs.values());
-      if (outputs.length > 0) {
-        output = outputs[0];
-        console.log("Connected to:", output.name);
-      } else {
-        alert("No MIDI device found!");
-      }
-    });
+    <div class="grid" id="buttons"></div>
 
-    function sendProgramChange(program, channel = 0) {
-      if (!output) {
-        alert("No MIDI device connected.");
-        return;
-      }
-      const status = 0xC0 | (channel & 0x0F);
-      output.send([status, program]);
-      console.log("Sent PC", program, "on channel", channel + 1);
-    }
+    <!-- Edit mode overlay with table -->
+    <div id="edit-overlay" class="modal">
+        <div class="modal-content-large">
+            <h2>Edit Patches</h2>
+            <div id="edit-table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Color</th>
+                            <th>PC #</th>
+                            <th>Channel</th>
+                            <th>CC #</th>
+                            <th>CC Val</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="edit-table-body">
+                        <!-- Rows will be dynamically inserted here -->
+                    </tbody>
+                </table>
+            </div>
+            <div class="edit-controls">
+                <button id="add-row-btn">Add New Patch</button>
+                <button id="save-table-btn">Save and Close</button>
+                <button id="cancel-table-btn">Cancel</button>
+            </div>
+        </div>
+    </div>
 
-    // Create buttons dynamically
-    const container = document.getElementById("buttons");
-    patches.forEach((label, index) => {
-      const btn = document.createElement("button");
-      btn.innerText = label;
-      btn.onclick = () => sendProgramChange(index + 1); // Auto-map: first label = PC 1
-      container.appendChild(btn);
-    });
-  </script>
+    <script src="script.js"></script>
 </body>
 </html>
