@@ -139,6 +139,7 @@ document.addEventListener('DOMContentLoaded', () => {
             btn.dataset.id = patch.id;
             btn.style.backgroundColor = patch.color;
             btn.style.color = getContrastingTextColor(patch.color);
+
             btn.onclick = () => sendMidiMessages(patch);
             buttonsContainer.appendChild(btn);
         });
@@ -205,6 +206,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const row = document.createElement('tr');
             row.dataset.id = patch.id;
             row.draggable = true;
+
             row.innerHTML = `
                 <td><input type="text" class="patch-name" value="${patch.name}"></td>
                 <td><input type="color" class="patch-color" value="${patch.color}"></td>
