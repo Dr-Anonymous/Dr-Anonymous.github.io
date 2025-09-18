@@ -195,7 +195,27 @@ td input[type="color"] {
     cursor: pointer;
 }
 
+@keyframes pulse-red {
+    0% {
+        box-shadow: 0 0 5px #ff4d4d;
+    }
+    50% {
+        box-shadow: 0 0 20px #ff4d4d;
+    }
+    100% {
+        box-shadow: 0 0 5px #ff4d4d;
+    }
+}
+
 .duplicate-highlight {
-    border: 2px dashed #ff4d4d;
-    box-shadow: 0 0 10px #ff4d4d;
+    border: 2px solid #ff4d4d;
+    animation: pulse-red 1.5s infinite;
+}
+
+tr.drag-over {
+    background-color: #3a3a3a;
+}
+
+tr.dragging {
+    opacity: 0.5;
 }

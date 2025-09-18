@@ -116,6 +116,21 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // --- Main UI Rendering ---
+    function getContrastingTextColor(hex) {
+        if (hex.startsWith('#')) {
+            hex = hex.slice(1);
+        }
+        if (hex.length === 3) {
+            hex = hex.split('').map(char => char + char).join('');
+        }
+        const r = parseInt(hex.substring(0, 2), 16);
+        const g = parseInt(hex.substring(2, 4), 16);
+        const b = parseInt(hex.substring(4, 6), 16);
+        // http://www.w3.org/TR/AERT#color-contrast
+        const brightness = ((r * 299) + (g * 587) + (b * 114)) / 1000;
+        return (brightness > 125) ? '#000000' : '#ffffff';
+    }
+
     function renderButtons() {
         buttonsContainer.innerHTML = '';
         patches.forEach(patch => {
@@ -123,6 +138,8 @@ document.addEventListener('DOMContentLoaded', () => {
             btn.innerText = patch.name;
             btn.dataset.id = patch.id;
             btn.style.backgroundColor = patch.color;
+            btn.style.color = getContrastingTextColor(patch.color);
+
             btn.onclick = () => sendMidiMessages(patch);
             buttonsContainer.appendChild(btn);
         });
@@ -188,6 +205,8 @@ document.addEventListener('DOMContentLoaded', () => {
         patches.forEach(patch => {
             const row = document.createElement('tr');
             row.dataset.id = patch.id;
+            row.draggable = true;
+
             row.innerHTML = `
                 <td><input type="text" class="patch-name" value="${patch.name}"></td>
                 <td><input type="color" class="patch-color" value="${patch.color}"></td>
@@ -314,6 +333,66 @@ document.addEventListener('DOMContentLoaded', () => {
     addRowBtn.addEventListener('click', addNewPatchRow);
     exportBtn.addEventListener('click', exportPatches);
     fileInput.addEventListener('change', importPatches);
+
+    // --- Drag-and-Drop Logic for Table ---
+    let draggedItem = null;
+
+    editTableBody.addEventListener('dragstart', e => {
+        draggedItem = e.target;
+        // Use a class to signify dragging state
+        setTimeout(() => {
+            e.target.classList.add('dragging');
+        }, 0);
+    });
+
+    editTableBody.addEventListener('dragend', e => {
+        // Clean up dragging class
+        e.target.classList.remove('dragging');
+    });
+
+    editTableBody.addEventListener('dragover', e => {
+        e.preventDefault();
+        const afterElement = getDragAfterElement(editTableBody, e.clientY);
+        const allRows = [...editTableBody.querySelectorAll('tr')];
+        allRows.forEach(row => row.classList.remove('drag-over'));
+
+        if (afterElement == null) {
+            // If dragging to the end, no specific element is "after"
+        } else {
+            afterElement.classList.add('drag-over');
+        }
+    });
+
+    editTableBody.addEventListener('drop', e => {
+        e.preventDefault();
+        // Remove all visual indicators
+        const allRows = [...editTableBody.querySelectorAll('tr')];
+        allRows.forEach(row => row.classList.remove('drag-over'));
+
+        const afterElement = getDragAfterElement(editTableBody, e.clientY);
+        if (draggedItem) { // Ensure we have an item to drop
+            if (afterElement == null) {
+                editTableBody.appendChild(draggedItem);
+            } else {
+                editTableBody.insertBefore(draggedItem, afterElement);
+            }
+        }
+    });
+
+    function getDragAfterElement(container, y) {
+        const draggableElements = [...container.querySelectorAll('tr:not(.dragging)')];
+
+        return draggableElements.reduce((closest, child) => {
+            const box = child.getBoundingClientRect();
+            const offset = y - box.top - box.height / 2;
+            if (offset < 0 && offset > closest.offset) {
+                return { offset: offset, element: child };
+            } else {
+                return closest;
+            }
+        }, { offset: Number.NEGATIVE_INFINITY }).element;
+    }
+
 
     // --- Initial setup ---
     initMidi();
