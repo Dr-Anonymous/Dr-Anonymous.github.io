@@ -1,7 +1,6 @@
 document.addEventListener('DOMContentLoaded', () => {
     // --- DOM Elements ---
     const buttonsContainer = document.getElementById('buttons');
-    const editModeToggle = document.getElementById('edit-mode-toggle');
     const exportBtn = document.getElementById('export-btn');
     const fileInput = document.getElementById('file-input');
     const midiOutputSelector = document.getElementById('midi-output-selector');
@@ -11,13 +10,13 @@ document.addEventListener('DOMContentLoaded', () => {
     const saveTableBtn = document.getElementById('save-table-btn');
     const cancelTableBtn = document.getElementById('cancel-table-btn');
     const fullscreenBtn = document.getElementById('fullscreen-btn');
+    const editBtn = document.getElementById('edit-btn');
 
     // --- State ---
     let wakeLock = null;
     let midiOutput = null;
     let midiOutputs = [];
     let patches = [];
-    let isEditMode = false;
 
     // --- Default Data ---
     const defaultPatches = [
@@ -192,14 +191,13 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // --- Edit Mode Table Logic ---
-    function toggleEditMode() {
-        isEditMode = editModeToggle.checked;
-        if (isEditMode) {
-            renderEditTable();
-            editOverlay.style.display = 'block';
-        } else {
-            editOverlay.style.display = 'none';
-        }
+    function openEditMode() {
+        renderEditTable();
+        editOverlay.style.display = 'block';
+    }
+
+    function closeEditMode() {
+        editOverlay.style.display = 'none';
     }
 
     function renderEditTable() {
@@ -251,8 +249,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
         patches = newPatches;
         savePatches();
-        editModeToggle.checked = false;
-        toggleEditMode();
+        closeEditMode();
     }
 
     function addNewPatchRow() {
@@ -326,12 +323,9 @@ document.addEventListener('DOMContentLoaded', () => {
         midiOutput = midiOutputs.find(output => output.id === selectedId);
         console.log(`MIDI output changed to: ${midiOutput.name}`);
     });
-    editModeToggle.addEventListener('change', toggleEditMode);
+    editBtn.addEventListener('click', openEditMode);
     saveTableBtn.addEventListener('click', saveTableChanges);
-    cancelTableBtn.addEventListener('click', () => {
-        editModeToggle.checked = false;
-        toggleEditMode();
-    });
+    cancelTableBtn.addEventListener('click', closeEditMode);
     addRowBtn.addEventListener('click', addNewPatchRow);
     exportBtn.addEventListener('click', exportPatches);
     fileInput.addEventListener('change', importPatches);
@@ -339,18 +333,28 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- Fullscreen & Screen Wake Lock ---
     async function toggleFullscreen() {
-        if (!document.fullscreenElement) {
-            try {
-                await document.documentElement.requestFullscreen();
-                await requestWakeLock();
-            } catch (err) {
-                console.error(`Error attempting to enable full-screen mode: ${err.message} (${err.name})`);
+        const docEl = document.documentElement;
+        const requestFullScreen = docEl.requestFullscreen || docEl.mozRequestFullScreen || docEl.webkitRequestFullScreen || docEl.msRequestFullscreen;
+        const exitFullScreen = document.exitFullscreen || document.mozCancelFullScreen || document.webkitExitFullscreen || document.msExitFullscreen;
+
+        try {
+            if (!document.fullscreenElement && !document.mozFullScreenElement && !document.webkitFullscreenElement && !document.msFullscreenElement) {
+                if (requestFullScreen) {
+                    await requestFullScreen.call(docEl);
+                    await requestWakeLock();
+                } else {
+                    console.warn("Fullscreen API is not supported by this browser.");
+                }
+            } else {
+                if (exitFullScreen) {
+                    await exitFullScreen.call(document);
+                    releaseWakeLock();
+                } else {
+                    console.warn("Fullscreen API is not supported by this browser.");
+                }
             }
-        } else {
-            if (document.exitFullscreen) {
-                await document.exitFullscreen();
-                releaseWakeLock();
-            }
+        } catch (err) {
+            console.error(`An error occurred while toggling fullscreen: ${err.name}, ${err.message}`);
         }
     }
 
