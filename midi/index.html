@@ -18,11 +18,13 @@
         <label for="file-input" class="file-input-label">Import</label>
         <input type="file" id="file-input" accept=".json,.txt">
 
-        <span>Edit Mode</span>
-        <label class="switch">
-            <input type="checkbox" id="edit-mode-toggle">
-            <span class="slider"></span>
-        </label>
+        <button id="fullscreen-btn" title="Toggle Fullscreen">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white" width="18px" height="18px">
+                <path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 2h-2v3h-3v2h5v-5zm-3-2V5h-2v2h3v3z"/>
+            </svg>
+        </button>
+
+        <button id="edit-btn">Edit</button>
     </div>
 
     <div class="grid" id="buttons"></div>
