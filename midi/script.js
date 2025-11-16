@@ -10,8 +10,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const addRowBtn = document.getElementById('add-row-btn');
     const saveTableBtn = document.getElementById('save-table-btn');
     const cancelTableBtn = document.getElementById('cancel-table-btn');
+    const fullscreenBtn = document.getElementById('fullscreen-btn');
 
     // --- State ---
+    let wakeLock = null;
     let midiOutput = null;
     let midiOutputs = [];
     let patches = [];
@@ -333,6 +335,49 @@ document.addEventListener('DOMContentLoaded', () => {
     addRowBtn.addEventListener('click', addNewPatchRow);
     exportBtn.addEventListener('click', exportPatches);
     fileInput.addEventListener('change', importPatches);
+    fullscreenBtn.addEventListener('click', toggleFullscreen);
+
+    // --- Fullscreen & Screen Wake Lock ---
+    async function toggleFullscreen() {
+        if (!document.fullscreenElement) {
+            try {
+                await document.documentElement.requestFullscreen();
+                await requestWakeLock();
+            } catch (err) {
+                console.error(`Error attempting to enable full-screen mode: ${err.message} (${err.name})`);
+            }
+        } else {
+            if (document.exitFullscreen) {
+                await document.exitFullscreen();
+                releaseWakeLock();
+            }
+        }
+    }
+
+    async function requestWakeLock() {
+        try {
+            wakeLock = await navigator.wakeLock.request('screen');
+            console.log('Screen Wake Lock is active.');
+            wakeLock.addEventListener('release', () => {
+                console.log('Screen Wake Lock was released.');
+            });
+        } catch (err) {
+            console.error(`${err.name}, ${err.message}`);
+        }
+    }
+
+    function releaseWakeLock() {
+        if (wakeLock) {
+            wakeLock.release();
+            wakeLock = null;
+        }
+    }
+
+    document.addEventListener('fullscreenchange', () => {
+        if (!document.fullscreenElement) {
+            releaseWakeLock();
+        }
+    });
 
     // --- Drag-and-Drop Logic for Table ---
     let draggedItem = null;

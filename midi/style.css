@@ -44,6 +44,12 @@ button:hover, .file-input-label:hover {
     box-shadow: 0 4px 8px rgba(0,0,0,0.3);
 }
 
+#fullscreen-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
 /* Edit Mode Toggle Switch */
 .switch {
     position: relative;
