@@ -1,10 +1,11 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>OrthoCam</title>
-    
+
     <link rel="shortcut icon" href="/assets/images/favicon_io/favicon.ico" type="image/x-icon">
     <link rel="apple-touch-icon" sizes="180x180" href="/assets/images/favicon_io/apple-touch-icon.png">
     <link rel="icon" type="image/png" sizes="32x32" href="/assets/images/favicon_io/favicon-32x32.png">
@@ -14,6 +15,7 @@
         * {
             box-sizing: border-box;
         }
+
         body {
             font-family: 'Roboto', Arial, sans-serif;
             margin: 0;
@@ -24,26 +26,31 @@
             color: white;
             -webkit-tap-highlight-color: transparent;
         }
+
         #app-container {
             display: flex;
             flex-direction: column;
             height: 100%;
             position: relative;
         }
+
         #camera-container {
             flex: 1;
             position: relative;
             overflow: hidden;
             background: #000;
         }
-        #camera-view, #photo-result {
+
+        #camera-view,
+        #photo-result {
             width: 100%;
             height: 100%;
             object-fit: cover;
         }
+
         #controls {
             padding: 15px;
-            background: rgba(0,0,0,0.8);
+            background: rgba(0, 0, 0, 0.8);
             display: flex;
             justify-content: space-around;
             position: fixed;
@@ -53,9 +60,10 @@
             z-index: 100;
             backdrop-filter: blur(10px);
         }
+
         button {
             padding: 0;
-            background: rgba(255,255,255,0.2);
+            background: rgba(255, 255, 255, 0.2);
             color: white;
             border: none;
             border-radius: 50%;
@@ -69,10 +77,12 @@
             justify-content: center;
             transition: all 0.2s ease;
         }
+
         button:hover {
-            background: rgba(255,255,255,0.3);
+            background: rgba(255, 255, 255, 0.3);
             transform: scale(1.05);
         }
+
         #capture-btn {
             background: #fff;
             color: #000;
@@ -80,26 +90,30 @@
             height: 65px;
             border-radius: 50%;
             font-size: 28px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
         }
+
         #capture-btn:hover {
             background: #f0f0f0;
             transform: scale(1.05);
         }
+
         /* Replace the existing #overlay-container and #map-thumbnail styles with these: */
 
         #overlay-container {
             position: absolute;
             bottom: 85px;
             right: 16px;
-            left: 180px; /* Make space for the map thumbnail on the left */
+            left: 180px;
+            /* Make space for the map thumbnail on the left */
             color: white;
-            background: rgba(0,0,0,0.85);
+            background: rgba(0, 0, 0, 0.85);
             padding: 16px 20px;
             font-family: 'Roboto', Arial, sans-serif;
             backdrop-filter: blur(8px);
             border-radius: 8px;
-            max-width: calc(100% - 196px); /* Prevent overlay from being too wide */
+            max-width: calc(100% - 196px);
+            /* Prevent overlay from being too wide */
         }
 
         #map-thumbnail {
@@ -109,10 +123,10 @@
             width: 160px;
             height: 120px;
             border-radius: 8px;
-            border: 2px solid rgba(255,255,255,0.9);
+            border: 2px solid rgba(255, 255, 255, 0.9);
             overflow: hidden;
             z-index: 10;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
         }
 
         /* For mobile responsiveness */
@@ -128,38 +142,42 @@
                 height: 90px;
             }
         }
-        
+
         #photo-canvas {
             display: none;
         }
-        
+
         .location-title {
             font-size: 20px;
             font-weight: 500;
             margin-bottom: 8px;
             color: #ffffff;
         }
+
         .address-detail {
             font-size: 14px;
             line-height: 1.4;
             margin-bottom: 8px;
             color: #e0e0e0;
         }
+
         .coordinates-info {
             font-size: 14px;
             margin-bottom: 4px;
             color: #e0e0e0;
         }
+
         .timestamp-info {
             font-size: 14px;
             color: #b0b0b0;
         }
+
         #saving-indicator {
             position: fixed;
             top: 20px;
             left: 50%;
             transform: translateX(-50%);
-            background: rgba(0,0,0,0.8);
+            background: rgba(0, 0, 0, 0.8);
             color: white;
             padding: 12px 20px;
             border-radius: 25px;
@@ -168,11 +186,12 @@
             z-index: 200;
             backdrop-filter: blur(8px);
         }
+
         .status-indicator {
             position: absolute;
             top: 16px;
             left: 16px;
-            background: rgba(0,0,0,0.7);
+            background: rgba(0, 0, 0, 0.7);
             color: white;
             padding: 8px 12px;
             border-radius: 16px;
@@ -180,28 +199,33 @@
             z-index: 15;
             backdrop-filter: blur(4px);
         }
+
         .status-indicator.success {
             background: rgba(16, 185, 129, 0.8);
         }
+
         .status-indicator.warning {
             background: rgba(245, 158, 11, 0.8);
         }
+
         .status-indicator.error {
             background: rgba(239, 68, 68, 0.8);
         }
+
         @media (min-width: 768px) {
             #controls {
                 bottom: 20px;
                 left: 50%;
                 transform: translateX(-50%);
                 width: auto;
-                background: rgba(0,0,0,0.8);
+                background: rgba(0, 0, 0, 0.8);
                 border-radius: 35px;
                 padding: 20px;
             }
         }
     </style>
 </head>
+
 <body>
     <div id="app-container">
         <div id="camera-container">
@@ -220,7 +244,7 @@
         <div id="controls" style="display:none;">
             <button id="record-toggle" title="Start Recording">🎥</button>
             <button id="capture-btn" title="Capture">📷</button>
-            <button id="upload-btn" title="Upload" style="display: none;">📁</button>
+            <button id="upload-btn" title="Upload">📁</button>
         </div>
         <div id="saving-indicator">Saving photo...</div>
     </div>
@@ -255,20 +279,20 @@
         const recordBtn = document.getElementById('record-toggle');
         const controls = document.getElementById("controls");
 
-        
+
         // Initialize the application
         async function initApp() {
             updateStatus('Getting camera access...', 'warning');
             await initCamera();
             updateStatus('Getting location...', 'warning');
-            
+
             loadGoogleMapsAPI();
             startLocationTracking();
-            
+
             // Set up event listeners
             captureBtn.addEventListener('click', captureAndSavePhoto);
             uploadBtn.addEventListener('click', uploadPhoto);
-            
+
             recordBtn.addEventListener('click', () => {
                 if (!isRecording) {
                     startRecording();
@@ -282,7 +306,7 @@
         function updateStatus(message, type = 'warning') {
             statusIndicator.textContent = message;
             statusIndicator.className = `status-indicator ${type}`;
-            
+
             if (type === 'success') {
                 setTimeout(() => {
                     statusIndicator.style.opacity = '0.7';
@@ -313,7 +337,7 @@
                     updateStatus('Map unavailable', 'error');
                     reject(new Error('Failed to load Google Maps API'));
                 };
-                
+
                 document.head.appendChild(script);
             });
         }
@@ -353,7 +377,7 @@
                         scaledSize: new google.maps.Size(30, 30),
                         anchor: new google.maps.Point(15, 15)
                     }
-                });                
+                });
             } catch (error) {
                 console.error('Error initializing Google Maps:', error);
                 updateStatus('Map initialization failed', 'error');
@@ -370,7 +394,7 @@
                         height: { ideal: 1080 }
                     }
                 };
-                
+
                 cameraStream = await navigator.mediaDevices.getUserMedia(constraints);
                 cameraView.srcObject = cameraStream;
                 updateStatus('Camera ready', 'success');
@@ -399,7 +423,7 @@
             navigator.geolocation.getCurrentPosition(
                 async position => {
                     await handleLocationSuccess(position);
-                    
+
                     navigator.geolocation.watchPosition(
                         handleLocationSuccess,
                         handleLocationError,
@@ -411,14 +435,14 @@
             );
         }
 
-       
+
 
         // Handle location errors
         function handleLocationError(error) {
             console.error("Geolocation error: ", error);
-            
+
             let errorMessage = "Location unavailable";
-            switch(error.code) {
+            switch (error.code) {
                 case error.PERMISSION_DENIED:
                     errorMessage = "Location access denied";
                     break;
@@ -429,7 +453,7 @@
                     errorMessage = "Location timeout";
                     break;
             }
-            
+
             addressInfo = errorMessage;
             locationStatus = 'error';
             updateStatus(errorMessage, 'error');
@@ -460,7 +484,7 @@
                 // Extract city/area from address
                 const cityMatch = addressInfo.match(/([^,]+,\s*[^,]+,\s*[^,]+)/);
                 const cityPart = cityMatch ? cityMatch[0] : "Location Found";
-                
+
                 const dateStr = currentLocation.timestamp.toLocaleString('en-GB', {
                     day: '2-digit',
                     month: '2-digit',
@@ -470,7 +494,7 @@
                     hour12: true,
                     timeZoneName: 'short'
                 });
-                
+
                 //locationTitle.textContent = cityPart;
                 addressText.textContent = addressInfo;
                 coordinatesText.textContent = `Lat ${currentLocation.lat.toFixed(6)}° Long ${currentLocation.lng.toFixed(6)}°`;
@@ -508,42 +532,42 @@
                 alert("Camera not available");
                 return;
             }
-            
+
             try {
                 savingIndicator.style.display = 'block';
-                
+
                 const context = photoCanvas.getContext('2d');
                 photoCanvas.width = cameraView.videoWidth;
                 photoCanvas.height = cameraView.videoHeight;
-                
+
                 context.drawImage(cameraView, 0, 0, photoCanvas.width, photoCanvas.height);
-                
+
                 await addOverlayToCanvas(context);
-                
+
                 const dateStr = new Date().toISOString()
                     .replace(/[:.]/g, '-')
                     .replace('T', '_')
                     .substring(0, 19);
-                
+
                 const imageData = photoCanvas.toDataURL('image/jpeg', 0.9);
                 savePhotoToDevice(imageData, `OrthoCam_${dateStr}.jpg`);
-                
+
                 photoData.push({
                     imageData: imageData,
                     location: currentLocation,
                     address: addressInfo,
                     timestamp: new Date()
                 });
-                
+
                 photoResult.src = imageData;
                 photoResult.style.display = 'block';
                 cameraView.style.display = 'none';
-                
+
                 setTimeout(() => {
                     photoResult.style.display = 'none';
                     cameraView.style.display = 'block';
                 }, 1500);
-                
+
             } catch (error) {
                 console.error("Error capturing/saving photo:", error);
                 alert("Error saving photo. Please try again.");
@@ -552,18 +576,18 @@
             }
         }
 
-        
+
 
         // Enhanced fallback map drawing
         function drawMapFallback(ctx, canvas, position) {
             const { x, y } = position;
             const mapWidth = 140;
             const mapHeight = 100;
-            
+
             // Draw satellite-like background
             ctx.fillStyle = '#2a4d3a';
             ctx.fillRect(x, y, mapWidth, mapHeight);
-            
+
             // Draw terrain patterns
             ctx.fillStyle = '#1a3d2a';
             for (let i = 0; i < 8; i++) {
@@ -573,7 +597,7 @@
                 const rectH = 8 + Math.random() * 8;
                 ctx.fillRect(rectX, rectY, rectW, rectH);
             }
-            
+
             // Draw roads/paths
             ctx.strokeStyle = '#6b7280';
             ctx.lineWidth = 2;
@@ -583,23 +607,23 @@
             ctx.moveTo(x + mapWidth * 0.6, y);
             ctx.lineTo(x + mapWidth * 0.7, y + mapHeight);
             ctx.stroke();
-            
+
             // Draw location marker
             const markerX = x + (mapWidth / 2);
             const markerY = y + (mapHeight / 2);
-            
+
             // Marker background
             ctx.fillStyle = '#ffffff';
             ctx.beginPath();
             ctx.arc(markerX, markerY, 8, 0, 2 * Math.PI);
             ctx.fill();
-            
+
             // Marker center
             ctx.fillStyle = '#dc2626';
             ctx.beginPath();
             ctx.arc(markerX, markerY, 5, 0, 2 * Math.PI);
             ctx.fill();
-            
+
             // Coordinates if available
             if (currentLocation) {
                 ctx.fillStyle = 'white';
@@ -607,12 +631,12 @@
                 const coordText = `${currentLocation.lat.toFixed(3)}, ${currentLocation.lng.toFixed(3)}`;
                 ctx.fillText(coordText, x + 4, y + 12);
             }
-            
+
             // Draw border
             ctx.strokeStyle = 'rgba(255,255,255,0.9)';
             ctx.lineWidth = 2;
             ctx.strokeRect(x, y, mapWidth, mapHeight);
-            
+
             // Google branding
             ctx.fillStyle = 'rgba(0,0,0,0.8)';
             ctx.fillRect(x + 4, y + mapHeight - 24, 60, 20);
@@ -631,12 +655,12 @@
             document.body.removeChild(link);
         }
 
-       // Upload existing photo
+        // Upload existing photo
         function uploadPhoto() {
             const input = document.createElement('input');
             input.type = 'file';
             input.accept = 'image/*';
-            
+
             input.onchange = async e => {
                 const file = e.target.files[0];
                 if (file) {
@@ -646,15 +670,15 @@
                         img.onload = async () => {
                             photoCanvas.width = img.width;
                             photoCanvas.height = img.height;
-                            
+
                             const ctx = photoCanvas.getContext('2d');
                             ctx.drawImage(img, 0, 0);
-                            
+
                             await addOverlayToCanvas(ctx);
-                            
+
                             const imageData = photoCanvas.toDataURL('image/jpeg', 0.9);
                             savePhotoToDevice(imageData, `OrthoCam_${new Date().getTime()}.jpg`);
-                            
+
                             photoData.push({
                                 imageData: imageData,
                                 location: currentLocation,
@@ -667,7 +691,7 @@
                     reader.readAsDataURL(file);
                 }
             };
-            
+
             input.click();
         }
 
@@ -683,229 +707,230 @@
         });
     </script>
 
-<!-- UPDATED cam.html: Adds video recording with overlays baked into video -->
+    <!-- UPDATED cam.html: Adds video recording with overlays baked into video -->
 
-<script>
-let videoCanvas = document.createElement('canvas');
-let videoCtx = videoCanvas.getContext('2d');
-let recordingChunks = [];
-let recorder = null;
-let isRecording = false;
-let currentMimeType = '';
+    <script>
+        let videoCanvas = document.createElement('canvas');
+        let videoCtx = videoCanvas.getContext('2d');
+        let recordingChunks = [];
+        let recorder = null;
+        let isRecording = false;
+        let currentMimeType = '';
 
-function startRecording() {
-    if (!cameraStream) {
-        alert("Camera not available");
-        return;
-    }
-    let options;
-    if (MediaRecorder.isTypeSupported('video/mp4; codecs="avc1.42E01E,mp4a.40.2"')) {
-    options = { mimeType: 'video/mp4; codecs="avc1.42E01E,mp4a.40.2"' };
-    } else if (MediaRecorder.isTypeSupported('video/mp4')) {
-    options = { mimeType: 'video/mp4' };
-    } else {
-    options = { mimeType: 'video/webm' };
-    }
-    
-    currentMimeType = options.mimeType;
-    isRecording = true;
-    recordBtn.textContent = '⏹';
-    updateStatus('Recording started...', 'success');
+        function startRecording() {
+            if (!cameraStream) {
+                alert("Camera not available");
+                return;
+            }
+            let options;
+            if (MediaRecorder.isTypeSupported('video/mp4; codecs="avc1.42E01E,mp4a.40.2"')) {
+                options = { mimeType: 'video/mp4; codecs="avc1.42E01E,mp4a.40.2"' };
+            } else if (MediaRecorder.isTypeSupported('video/mp4')) {
+                options = { mimeType: 'video/mp4' };
+            } else {
+                options = { mimeType: 'video/webm' };
+            }
 
-    videoCanvas.width = cameraView.videoWidth;
-    videoCanvas.height = cameraView.videoHeight;
+            currentMimeType = options.mimeType;
+            isRecording = true;
+            recordBtn.textContent = '⏹';
+            updateStatus('Recording started...', 'success');
 
-    recordingChunks = [];
-    const stream = videoCanvas.captureStream(30);
-    recorder = new MediaRecorder(stream, options);
+            videoCanvas.width = cameraView.videoWidth;
+            videoCanvas.height = cameraView.videoHeight;
 
-    recorder.ondataavailable = e => recordingChunks.push(e.data);
-    recorder.onstop = saveRecordedVideo;
+            recordingChunks = [];
+            const stream = videoCanvas.captureStream(30);
+            recorder = new MediaRecorder(stream, options);
 
-    recorder.start();
+            recorder.ondataavailable = e => recordingChunks.push(e.data);
+            recorder.onstop = saveRecordedVideo;
 
-    drawFrameLoop();
-}
+            recorder.start();
 
-async function drawFrameLoop() {
-    while (isRecording) {
-        videoCtx.drawImage(cameraView, 0, 0, videoCanvas.width, videoCanvas.height);
-        await addOverlayToCanvas(videoCtx); // ensure overlay completes
-        await new Promise(resolve => setTimeout(resolve, 33)); // ~30 FPS
-    }
-}
+            drawFrameLoop();
+        }
 
-function stopRecording() {
-    isRecording = false;
-    recordBtn.textContent = '🎥';
-    updateStatus('Recording stopped', 'warning');
-    if (recorder && recorder.state !== 'inactive') {
-        recorder.stop();
-    }
-}
+        async function drawFrameLoop() {
+            while (isRecording) {
+                videoCtx.drawImage(cameraView, 0, 0, videoCanvas.width, videoCanvas.height);
+                await addOverlayToCanvas(videoCtx); // ensure overlay completes
+                await new Promise(resolve => setTimeout(resolve, 33)); // ~30 FPS
+            }
+        }
 
-function saveRecordedVideo() {
-    const blob = new Blob(recordingChunks, { type: currentMimeType });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `OrthoCam_` + Date.now() + (currentMimeType.includes('mp4') ? '.mp4' : '.webm');
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-}
-    // Add these variables at the top with other declarations
-let staticMapImage = null;
-let overlayTextData = null;
+        function stopRecording() {
+            isRecording = false;
+            recordBtn.textContent = '🎥';
+            updateStatus('Recording stopped', 'warning');
+            if (recorder && recorder.state !== 'inactive') {
+                recorder.stop();
+            }
+        }
 
-// Replace the existing drawMapThumbnail function
-async function drawMapThumbnail(ctx, canvas, position) {
-    const { x, y } = position;
-    const mapWidth = 140;
-    const mapHeight = 100;
-    
-    if (staticMapImage) {
-        // Use cached static map image
-        ctx.drawImage(staticMapImage, x, y, mapWidth, mapHeight);
-        
-        // Draw border
-        ctx.strokeStyle = 'rgba(255,255,255,0.9)';
-        ctx.lineWidth = 2;
-        ctx.strokeRect(x, y, mapWidth, mapHeight);
-    } else {
-        // Fallback if no static map loaded
-        drawMapFallback(ctx, canvas, position);
-    }
-}
+        function saveRecordedVideo() {
+            const blob = new Blob(recordingChunks, { type: currentMimeType });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `OrthoCam_` + Date.now() + (currentMimeType.includes('mp4') ? '.mp4' : '.webm');
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+        }
+        // Add these variables at the top with other declarations
+        let staticMapImage = null;
+        let overlayTextData = null;
 
-// Add this new function to load static map once
-async function loadStaticMapImage() {
-    if (!currentLocation) return;
-    
-    try {
-        const zoom = 17;
-        const mapWidth = 140;
-        const mapHeight = 100;
-        const staticMapUrl = `https://maps.googleapis.com/maps/api/staticmap?` +
-            `center=${currentLocation.lat},${currentLocation.lng}&` +
-            `zoom=${zoom}&` +
-            `size=${mapWidth}x${mapHeight}&` +
-            `maptype=satellite&` +
-            `markers=color:red%7Csize:mid%7C${currentLocation.lat},${currentLocation.lng}&` +
-            `scale=2&` +
-            `key=${GOOGLE_MAPS_API_KEY}`;
-        
-        staticMapImage = new Image();
-        staticMapImage.crossOrigin = 'anonymous';
-        
-        await new Promise((resolve, reject) => {
-            staticMapImage.onload = resolve;
-            staticMapImage.onerror = reject;
-            staticMapImage.src = staticMapUrl;
-        });
-    } catch (error) {
-        console.error("Error loading static map:", error);
-        staticMapImage = null;
-    }
-}
+        // Replace the existing drawMapThumbnail function
+        async function drawMapThumbnail(ctx, canvas, position) {
+            const { x, y } = position;
+            const mapWidth = 140;
+            const mapHeight = 100;
 
-// Add this function to cache overlay text data
-function cacheOverlayTextData() {
-    if (!currentLocation) return;
-    
-    const dateStr = currentLocation.timestamp.toLocaleString('en-GB', {
-        day: '2-digit',
-        month: '2-digit',
-        year: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit',
-        hour12: true,
-        timeZoneName: 'short'
-    });
-    
-    overlayTextData = {
-        address: addressInfo,
-        coordinates: `Lat ${currentLocation.lat.toFixed(6)}° Long ${currentLocation.lng.toFixed(6)}°`,
-        timestamp: dateStr
-    };
-}
+            if (staticMapImage) {
+                // Use cached static map image
+                ctx.drawImage(staticMapImage, x, y, mapWidth, mapHeight);
 
-// Update the handleLocationSuccess function to load static map
-async function handleLocationSuccess(position) {
-    currentLocation = {
-        lat: position.coords.latitude,
-        lng: position.coords.longitude,
-        accuracy: position.coords.accuracy,
-        timestamp: new Date(position.timestamp)
-    };
-    
-    updateStatus('Location found', 'success');
-    locationStatus = 'success';
-    
-    await getAddressFromCoordinates(currentLocation.lat, currentLocation.lng);
-    
-    // Load static map and cache text data
-    await loadStaticMapImage();
-    cacheOverlayTextData();
-    
-    updateLocationOverlay();
-    updateMap();
-    // Enable buttons once location is retrieved
-    controls.style.display = "flex";
-}
+                // Draw border
+                ctx.strokeStyle = 'rgba(255,255,255,0.9)';
+                ctx.lineWidth = 2;
+                ctx.strokeRect(x, y, mapWidth, mapHeight);
+            } else {
+                // Fallback if no static map loaded
+                drawMapFallback(ctx, canvas, position);
+            }
+        }
 
-// Update addOverlayToCanvas to use cached data
-async function addOverlayToCanvas(ctx) {
-    const canvas = ctx.canvas;
+        // Add this new function to load static map once
+        async function loadStaticMapImage() {
+            if (!currentLocation) return;
 
-    // Calculate overlay dimensions
-    const overlayHeight = 100;
-    const mapWidth = 160;
-    const mapHeight = 120;
-    const mapPosition = { x: 16, y: canvas.height - overlayHeight - 16 };
-    const overlayPosition = { x: mapWidth + 32, y: canvas.height - overlayHeight - 16 };
-    const overlayWidth = canvas.width - mapWidth - 48;
+            try {
+                const zoom = 17;
+                const mapWidth = 140;
+                const mapHeight = 100;
+                const staticMapUrl = `https://maps.googleapis.com/maps/api/staticmap?` +
+                    `center=${currentLocation.lat},${currentLocation.lng}&` +
+                    `zoom=${zoom}&` +
+                    `size=${mapWidth}x${mapHeight}&` +
+                    `maptype=satellite&` +
+                    `markers=color:red%7Csize:mid%7C${currentLocation.lat},${currentLocation.lng}&` +
+                    `scale=2&` +
+                    `key=${GOOGLE_MAPS_API_KEY}`;
 
-    // Draw map thumbnail (now uses cached static image)
-    await drawMapThumbnail(ctx, canvas, mapPosition);
+                staticMapImage = new Image();
+                staticMapImage.crossOrigin = 'anonymous';
 
-    // Draw overlay background
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.60)';
-    ctx.fillRect(overlayPosition.x, overlayPosition.y, overlayWidth, overlayHeight);
+                await new Promise((resolve, reject) => {
+                    staticMapImage.onload = resolve;
+                    staticMapImage.onerror = reject;
+                    staticMapImage.src = staticMapUrl;
+                });
+            } catch (error) {
+                console.error("Error loading static map:", error);
+                staticMapImage = null;
+            }
+        }
 
-    // Draw text content using cached data
-    ctx.fillStyle = 'white';
-    ctx.textBaseline = 'top';
+        // Add this function to cache overlay text data
+        function cacheOverlayTextData() {
+            if (!currentLocation) return;
 
-    let y = overlayPosition.y + 16;
-    const lineHeight = 24;
+            const dateStr = currentLocation.timestamp.toLocaleString('en-GB', {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: true,
+                timeZoneName: 'short'
+            });
 
-    if (overlayTextData) {
-        // Address detail
-        ctx.font = '20px Roboto, Arial';
-        ctx.fillStyle = '#e0e0e0';
-        ctx.fillText(overlayTextData.address, overlayPosition.x + 16, y);
-        y += lineHeight - 4;
+            overlayTextData = {
+                address: addressInfo,
+                coordinates: `Lat ${currentLocation.lat.toFixed(6)}° Long ${currentLocation.lng.toFixed(6)}°`,
+                timestamp: dateStr
+            };
+        }
 
-        // Coordinates
-        ctx.font = '14px Roboto, Arial';
-        ctx.fillStyle = '#b0b0b0';
-        ctx.fillText(overlayTextData.coordinates, overlayPosition.x + 16, y);
-        y += lineHeight;
+        // Update the handleLocationSuccess function to load static map
+        async function handleLocationSuccess(position) {
+            currentLocation = {
+                lat: position.coords.latitude,
+                lng: position.coords.longitude,
+                accuracy: position.coords.accuracy,
+                timestamp: new Date(position.timestamp)
+            };
 
-        // Timestamp
-        ctx.font = '18px Roboto, Arial';
-        ctx.fillStyle = '#e0e0e0';
-        ctx.fillText(overlayTextData.timestamp, overlayPosition.x + 16, y);
-    } else {
-        // Fallback text
-        ctx.font = '18px Roboto, Arial';
-        ctx.fillStyle = '#e0e0e0';
-        ctx.fillText('Getting location...', overlayPosition.x + 16, y);
-    }
-}
-</script>
+            updateStatus('Location found', 'success');
+            locationStatus = 'success';
 
-    
+            await getAddressFromCoordinates(currentLocation.lat, currentLocation.lng);
+
+            // Load static map and cache text data
+            await loadStaticMapImage();
+            cacheOverlayTextData();
+
+            updateLocationOverlay();
+            updateMap();
+            // Enable buttons once location is retrieved
+            controls.style.display = "flex";
+        }
+
+        // Update addOverlayToCanvas to use cached data
+        async function addOverlayToCanvas(ctx) {
+            const canvas = ctx.canvas;
+
+            // Calculate overlay dimensions
+            const overlayHeight = 100;
+            const mapWidth = 160;
+            const mapHeight = 120;
+            const mapPosition = { x: 16, y: canvas.height - overlayHeight - 16 };
+            const overlayPosition = { x: mapWidth + 32, y: canvas.height - overlayHeight - 16 };
+            const overlayWidth = canvas.width - mapWidth - 48;
+
+            // Draw map thumbnail (now uses cached static image)
+            await drawMapThumbnail(ctx, canvas, mapPosition);
+
+            // Draw overlay background
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.60)';
+            ctx.fillRect(overlayPosition.x, overlayPosition.y, overlayWidth, overlayHeight);
+
+            // Draw text content using cached data
+            ctx.fillStyle = 'white';
+            ctx.textBaseline = 'top';
+
+            let y = overlayPosition.y + 16;
+            const lineHeight = 24;
+
+            if (overlayTextData) {
+                // Address detail
+                ctx.font = '20px Roboto, Arial';
+                ctx.fillStyle = '#e0e0e0';
+                ctx.fillText(overlayTextData.address, overlayPosition.x + 16, y);
+                y += lineHeight - 4;
+
+                // Coordinates
+                ctx.font = '14px Roboto, Arial';
+                ctx.fillStyle = '#b0b0b0';
+                ctx.fillText(overlayTextData.coordinates, overlayPosition.x + 16, y);
+                y += lineHeight;
+
+                // Timestamp
+                ctx.font = '18px Roboto, Arial';
+                ctx.fillStyle = '#e0e0e0';
+                ctx.fillText(overlayTextData.timestamp, overlayPosition.x + 16, y);
+            } else {
+                // Fallback text
+                ctx.font = '18px Roboto, Arial';
+                ctx.fillStyle = '#e0e0e0';
+                ctx.fillText('Getting location...', overlayPosition.x + 16, y);
+            }
+        }
+    </script>
+
+
 </body>
+
 </html>
