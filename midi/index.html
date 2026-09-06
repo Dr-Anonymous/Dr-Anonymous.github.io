@@ -2,62 +2,313 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>MIDI Patch Changer</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>MIDI Patch Changer | Stage Controller</title>
+    <meta name="description" content="Professional live-performance Web MIDI patch changer with Bank Select, Setlists, Panic control, and tactile hardware design." />
     <link rel="manifest" href="manifest.json">
     <link rel="shortcut icon" href="./favicon/favicon.ico" type="image/x-icon">
-    <meta name="theme-color" content="#121212" />
+    <meta name="theme-color" content="#0d0f12" />
+    
+    <!-- Google Fonts for sleek stage typography -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+    
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <h1>MIDI Patch Changer</h1>
+    <div class="app-wrapper">
+        <!-- Top Status & Hardware Bar -->
+        <header class="hardware-deck">
+            <div class="brand-section">
+                <div class="brand-icon">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <circle cx="12" cy="12" r="2"></circle>
+                        <line x1="12" y1="2" x2="12" y2="4"></line>
+                        <line x1="12" y1="20" x2="12" y2="22"></line>
+                        <line x1="20" y1="12" x2="22" y2="12"></line>
+                        <line x1="2" y1="12" x2="4" y2="12"></line>
+                    </svg>
+                </div>
+                <div class="brand-text">
+                    <h1>MIDI PATCH CONTROLLER</h1>
+                    <span class="sub-label">STAGE COMMAND &bull; WEB MIDI</span>
+                </div>
+            </div>
 
-    <div class="controls">
-        <select id="midi-output-selector"></select>
-        <button id="export-btn">Export</button>
-        <label for="file-input" class="file-input-label">Import</label>
-        <input type="file" id="file-input" accept=".json,.txt">
+            <!-- Device Connection & Activity Monitors -->
+            <div class="device-cluster">
+                <div class="midi-out-wrapper">
+                    <label for="midi-output-selector" class="sr-only">MIDI Output Device</label>
+                    <div class="custom-select-wrap">
+                        <span id="connection-status-dot" class="status-dot disconnected" title="Connection status"></span>
+                        <select id="midi-output-selector" title="Select MIDI Output Device">
+                            <option value="">Searching for MIDI devices...</option>
+                        </select>
+                    </div>
+                </div>
 
-        <button id="fullscreen-btn" title="Toggle Fullscreen">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white" width="18px" height="18px">
-                <path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 2h-2v3h-3v2h5v-5zm-3-2V5h-2v2h3v3z"/>
-            </svg>
-        </button>
+                <div class="tx-monitor" title="MIDI Transmission Activity">
+                    <span class="monitor-label">TX</span>
+                    <span id="tx-led" class="tx-led"></span>
+                </div>
+            </div>
 
-        <button id="edit-btn">Edit</button>
+            <!-- Global Hardware Quick Actions -->
+            <div class="global-actions">
+                <button id="panic-btn" class="deck-btn panic-btn" title="Panic: Send All Notes Off & Reset Controllers" aria-label="MIDI Panic">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                        <polygon points="7.86 2 16.14 2 22 7.86 22 16.14 16.14 22 7.86 22 2 16.14 2 7.86 7.86 2"></polygon>
+                        <line x1="12" y1="8" x2="12" y2="12"></line>
+                        <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                    </svg>
+                    <span>PANIC</span>
+                </button>
+
+                <button id="wake-btn" class="deck-btn wake-btn" title="Keep Screen Awake (Stage Mode)" aria-label="Toggle Screen Wake Lock">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="5"></circle>
+                        <line x1="12" y1="1" x2="12" y2="3"></line>
+                        <line x1="12" y1="21" x2="12" y2="23"></line>
+                        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                        <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                        <line x1="1" y1="12" x2="3" y2="12"></line>
+                        <line x1="21" y1="12" x2="23" y2="12"></line>
+                        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                        <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+                    </svg>
+                    <span id="wake-label">AWAKE</span>
+                </button>
+
+                <button id="fullscreen-btn" class="deck-btn icon-only" title="Toggle Fullscreen" aria-label="Toggle Fullscreen">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+                        <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/>
+                    </svg>
+                </button>
+            </div>
+        </header>
+
+        <!-- Secondary Navigation / Setlist & Search Bar -->
+        <nav class="sub-deck">
+            <div class="setlist-control-group">
+                <div id="setlist-tabs" class="setlist-tabs-container" role="tablist" aria-label="Setlists"></div>
+                <button id="new-setlist-btn" class="deck-btn sm icon-tab-btn" title="Create New Setlist">+ New</button>
+                <button id="manage-setlist-btn" class="deck-btn sm" title="Rename or Delete Current Setlist">Manage</button>
+            </div>
+
+            <div class="search-filter-wrap">
+                <div class="search-input-box">
+                    <svg class="search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                        <circle cx="11" cy="11" r="8"></circle>
+                        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                    </svg>
+                    <input type="text" id="search-input" placeholder="Search patches (name, PC, channel)..." autocomplete="off" spellcheck="false">
+                    <button id="clear-search-btn" class="clear-search-btn" style="display: none;" title="Clear search">&times;</button>
+                </div>
+            </div>
+
+            <div class="tools-control-group">
+                <button id="reorder-toggle-btn" class="deck-btn sm" title="Toggle Drag & Drop Grid Reordering">Reorder: Off</button>
+                <button id="edit-btn" class="deck-btn sm accent" title="Open Full Patch Editor">Edit All</button>
+                <button id="backup-menu-btn" class="deck-btn sm" title="Import, Export & Reset">Data &darr;</button>
+                <input type="file" id="file-input" accept=".json,.txt" class="hidden-file-input">
+            </div>
+        </nav>
+
+        <!-- Active Patch Live Readout -->
+        <div class="live-status-bar" id="live-status-bar">
+            <div class="status-indicator">
+                <span class="live-pill">CURRENT PATCH</span>
+                <span id="active-patch-name" class="active-title">No patch selected</span>
+                <span id="active-patch-meta" class="active-details">Click any pad to engage</span>
+            </div>
+            <div class="keyboard-hints">
+                <span class="key-badge">&larr;&rarr;</span> Navigate &bull; 
+                <span class="key-badge">Enter</span> Fire
+            </div>
+        </div>
+
+        <!-- Main Responsive Performance Grid -->
+        <main class="grid-container">
+            <div class="grid" id="buttons" role="region" aria-label="MIDI Patch Pads"></div>
+            <div id="no-results-msg" class="empty-state" style="display: none;">
+                <p>No patches match your search filter.</p>
+                <button id="reset-search-btn" class="deck-btn sm">Clear Filter</button>
+            </div>
+        </main>
     </div>
 
-    <div class="grid" id="buttons"></div>
+    <!-- Edit Mode Dialog (Full Table / Cards Editor) -->
+    <dialog id="edit-dialog" class="deck-modal" closedby="any" aria-labelledby="edit-modal-title">
+        <div class="modal-inner">
+            <div class="modal-header">
+                <div>
+                    <h2 id="edit-modal-title">Patch Library Editor</h2>
+                    <p class="modal-subtitle">Reorder by dragging rows, adjust Bank Select (MSB/LSB), Channel (1–16), and Control Changes.</p>
+                </div>
+                <button id="modal-close-icon-btn" class="icon-close-btn" aria-label="Close dialog">&times;</button>
+            </div>
 
-    <!-- Edit mode overlay with table -->
-    <div id="edit-overlay" class="modal">
-        <div class="modal-content-large">
-            <h2>Edit Patches</h2>
-            <div id="edit-table-container">
-                <table>
+            <div class="table-scroll-wrap" id="edit-table-container">
+                <table class="deck-table">
                     <thead>
                         <tr>
-                            <th>Name</th>
-                            <th>Color</th>
-                            <th>PC #</th>
-                            <th>Channel</th>
-                            <th>CC #</th>
-                            <th>CC Val</th>
-                            <th>Actions</th>
+                            <th class="col-drag" title="Reorder row">#</th>
+                            <th class="col-name">Name</th>
+                            <th class="col-color">Color</th>
+                            <th class="col-chan" title="MIDI Channel (1 to 16)">Ch</th>
+                            <th class="col-pc" title="Program Change (0 to 127)">PC</th>
+                            <th class="col-bank" title="Bank Select MSB (CC#0) - optional">Bank MSB</th>
+                            <th class="col-bank" title="Bank Select LSB (CC#32) - optional">Bank LSB</th>
+                            <th class="col-cc" title="Control Change Number (0 to 127) - optional">CC #</th>
+                            <th class="col-cc" title="Control Change Value (0 to 127) - optional">CC Val</th>
+                            <th class="col-actions">Actions</th>
                         </tr>
                     </thead>
                     <tbody id="edit-table-body">
-                        <!-- Rows will be dynamically inserted here -->
+                        <!-- Dynamic rows inserted here -->
                     </tbody>
                 </table>
             </div>
-            <div class="edit-controls">
-                <button id="add-row-btn">Add New Patch</button>
-                <button id="save-table-btn">Save and Close</button>
-                <button id="cancel-table-btn">Cancel</button>
+
+            <div class="modal-footer">
+                <div class="footer-left">
+                    <button id="add-row-btn" class="deck-btn">+ Add Patch</button>
+                    <button id="duplicate-warning-info" class="deck-btn muted" style="display:none;" title="Duplicate channels & PCs detected">⚠️ Duplicates Flagged</button>
+                </div>
+                <div class="footer-right">
+                    <button id="cancel-table-btn" class="deck-btn">Cancel</button>
+                    <button id="save-table-btn" class="deck-btn accent">Save & Apply</button>
+                </div>
             </div>
         </div>
-    </div>
+    </dialog>
+
+    <!-- Quick Single Patch Edit Dialog (Triggered via Right Click or Long Press) -->
+    <dialog id="quick-edit-dialog" class="deck-modal quick-modal" closedby="any" aria-labelledby="quick-modal-title">
+        <form id="quick-edit-form" method="dialog" class="modal-inner">
+            <div class="modal-header">
+                <h2 id="quick-modal-title">Quick Edit Patch</h2>
+                <button type="button" id="quick-cancel-icon-btn" class="icon-close-btn" aria-label="Close dialog">&times;</button>
+            </div>
+            <div class="quick-form-grid">
+                <input type="hidden" id="quick-patch-id">
+                
+                <div class="form-group span-2">
+                    <label for="quick-name">Patch Name</label>
+                    <input type="text" id="quick-name" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="quick-color">Pad Color</label>
+                    <div class="color-picker-row">
+                        <input type="color" id="quick-color">
+                        <div id="quick-color-presets" class="color-presets"></div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="quick-channel">Channel (1–16)</label>
+                    <input type="number" id="quick-channel" min="1" max="16" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="quick-pc">Program Change (0–127)</label>
+                    <input type="number" id="quick-pc" min="0" max="127" placeholder="None">
+                </div>
+
+                <div class="form-group">
+                    <label for="quick-bank-msb">Bank MSB (CC#0)</label>
+                    <input type="number" id="quick-bank-msb" min="0" max="127" placeholder="Optional">
+                </div>
+
+                <div class="form-group">
+                    <label for="quick-bank-lsb">Bank LSB (CC#32)</label>
+                    <input type="number" id="quick-bank-lsb" min="0" max="127" placeholder="Optional">
+                </div>
+
+                <div class="form-group">
+                    <label for="quick-cc-num">CC Number (0–127)</label>
+                    <input type="number" id="quick-cc-num" min="0" max="127" placeholder="Optional">
+                </div>
+
+                <div class="form-group">
+                    <label for="quick-cc-val">CC Value (0–127)</label>
+                    <input type="number" id="quick-cc-val" min="0" max="127" placeholder="Optional">
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" id="quick-delete-btn" class="deck-btn danger">Delete</button>
+                <div class="footer-right">
+                    <button type="button" id="quick-cancel-btn" class="deck-btn">Cancel</button>
+                    <button type="submit" id="quick-save-btn" class="deck-btn accent">Save Changes</button>
+                </div>
+            </div>
+        </form>
+    </dialog>
+
+    <!-- Setlist Management Dialog -->
+    <dialog id="setlist-dialog" class="deck-modal sm-modal" closedby="any" aria-labelledby="setlist-modal-title">
+        <div class="modal-inner">
+            <div class="modal-header">
+                <h2 id="setlist-modal-title">Manage Setlists</h2>
+                <button id="setlist-close-icon-btn" class="icon-close-btn" aria-label="Close dialog">&times;</button>
+            </div>
+            <div class="setlist-body">
+                <div class="form-group">
+                    <label for="setlist-rename-input">Rename Active Setlist</label>
+                    <div class="inline-input-btn">
+                        <input type="text" id="setlist-rename-input">
+                        <button id="setlist-rename-btn" class="deck-btn sm">Rename</button>
+                    </div>
+                </div>
+                <div class="setlist-actions-list">
+                    <button id="setlist-duplicate-btn" class="deck-btn">Duplicate Current Setlist</button>
+                    <button id="setlist-delete-btn" class="deck-btn danger">Delete Current Setlist</button>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button id="setlist-done-btn" class="deck-btn accent">Done</button>
+            </div>
+        </div>
+    </dialog>
+
+    <!-- Data Backup & Reset Dialog -->
+    <dialog id="backup-dialog" class="deck-modal sm-modal" closedby="any" aria-labelledby="backup-modal-title">
+        <div class="modal-inner">
+            <div class="modal-header">
+                <h2 id="backup-modal-title">Data Backup & Factory Reset</h2>
+                <button id="backup-close-icon-btn" class="icon-close-btn" aria-label="Close dialog">&times;</button>
+            </div>
+            <div class="backup-options">
+                <div class="backup-card">
+                    <h3>Export Configuration</h3>
+                    <p>Save your setlists and patches as a portable JSON backup file.</p>
+                    <div class="btn-group">
+                        <button id="export-active-btn" class="deck-btn sm">Export Active Setlist</button>
+                        <button id="export-all-btn" class="deck-btn sm">Export All Setlists</button>
+                    </div>
+                </div>
+
+                <div class="backup-card">
+                    <h3>Import Configuration</h3>
+                    <p>Load setlists or patches from a JSON file.</p>
+                    <button id="import-trigger-btn" class="deck-btn sm">Choose File to Import...</button>
+                </div>
+
+                <div class="backup-card danger-zone">
+                    <h3>Factory Reset</h3>
+                    <p>Restore the built-in demo patches and default setlist. Your changes will be replaced.</p>
+                    <button id="reset-defaults-btn" class="deck-btn sm danger">Reset to Factory Presets</button>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button id="backup-done-btn" class="deck-btn">Close</button>
+            </div>
+        </div>
+    </dialog>
 
     <script src="script.js"></script>
 </body>

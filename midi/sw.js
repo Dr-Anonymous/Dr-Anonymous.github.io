@@ -1,50 +1,57 @@
-const CACHE_NAME = 'midi-patch-changer-cache-v1';
+const CACHE_NAME = 'midi-patch-changer-cache-v2';
 const urlsToCache = [
-  '/',
-  'index.html',
-  'style.css',
-  'script.js',
-  'manifest.json'
+  './',
+  './index.html',
+  './style.css',
+  './script.js',
+  './manifest.json',
+  './favicon/favicon.ico',
+  './favicon/android-chrome-192x192.png',
+  './favicon/android-chrome-512x512.png'
 ];
 
-// Install event: cache the application shell
+// Install event: cache application shell with relative paths
 self.addEventListener('install', event => {
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then(cache => {
-        console.log('Opened cache');
         return cache.addAll(urlsToCache);
       })
+      .then(() => self.skipWaiting())
   );
 });
 
-// Fetch event: serve from cache or fetch from network
+// Fetch event: cache-first with network fallback
 self.addEventListener('fetch', event => {
+  // Only handle GET requests for same origin or relative assets
+  if (event.request.method !== 'GET') return;
+
   event.respondWith(
     caches.match(event.request)
       .then(response => {
-        // Cache hit - return response
         if (response) {
           return response;
         }
-        // Not in cache - fetch from network
-        return fetch(event.request);
+        return fetch(event.request).then(networkResponse => {
+          // If valid response and same origin, we can optionally cache
+          return networkResponse;
+        });
       })
   );
 });
 
-// Activate event: clean up old caches
+// Activate event: clean up outdated caches and claim clients immediately
 self.addEventListener('activate', event => {
   const cacheWhitelist = [CACHE_NAME];
   event.waitUntil(
     caches.keys().then(cacheNames => {
       return Promise.all(
         cacheNames.map(cacheName => {
-          if (cacheWhitelist.indexOf(cacheName) === -1) {
+          if (!cacheWhitelist.includes(cacheName)) {
             return caches.delete(cacheName);
           }
         })
       );
-    })
+    }).then(() => self.clients.claim())
   );
 });
