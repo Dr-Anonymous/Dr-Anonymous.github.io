@@ -3,27 +3,58 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>OrthoCam</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>OrthoCam • Clinical Documentation</title>
 
     <link rel="shortcut icon" href="/assets/images/favicon_io/favicon.ico" type="image/x-icon">
     <link rel="apple-touch-icon" sizes="180x180" href="/assets/images/favicon_io/apple-touch-icon.png">
     <link rel="icon" type="image/png" sizes="32x32" href="/assets/images/favicon_io/favicon-32x32.png">
     <link rel="icon" type="image/png" sizes="16x16" href="/assets/images/favicon_io/favicon-16x16.png">
     <link rel="manifest" href="/assets/images/favicon_io/site.webmanifest">
+
+    <!-- Modern Typography -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
+
     <style>
+        :root {
+            --bg-base: #07090e;
+            --surface-glass: rgba(13, 18, 28, 0.86);
+            --surface-glass-subtle: rgba(22, 30, 46, 0.7);
+            --border-glass: rgba(255, 255, 255, 0.14);
+            --accent-cyan: #00e5ff;
+            --accent-emerald: #10b981;
+            --accent-amber: #f59e0b;
+            --accent-rose: #f43f5e;
+            --laterality-left: #2563eb;
+            --laterality-right: #d97706;
+            --laterality-both: #7c3aed;
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --text-muted: #64748b;
+            --radius-md: 10px;
+            --radius-lg: 16px;
+            --radius-pill: 9999px;
+            --safe-bottom: env(safe-area-inset-bottom, 16px);
+            --safe-top: env(safe-area-inset-top, 16px);
+        }
+
         * {
             box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+            -webkit-user-select: none;
         }
 
         body {
-            font-family: 'Roboto', Arial, sans-serif;
-            margin: 0;
-            padding: 0;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-base);
+            color: var(--text-primary);
             height: 100vh;
+            height: 100dvh;
             overflow: hidden;
-            background: #000;
-            color: white;
             -webkit-tap-highlight-color: transparent;
         }
 
@@ -32,8 +63,10 @@
             flex-direction: column;
             height: 100%;
             position: relative;
+            background: #000;
         }
 
+        /* Viewfinder */
         #camera-container {
             flex: 1;
             position: relative;
@@ -41,187 +74,933 @@
             background: #000;
         }
 
-        #camera-view,
-        #photo-result {
+        #camera-view {
             width: 100%;
             height: 100%;
             object-fit: cover;
+            display: block;
         }
 
-        #controls {
-            padding: 15px;
-            background: rgba(0, 0, 0, 0.8);
-            display: flex;
-            justify-content: space-around;
-            position: fixed;
-            bottom: 0;
+        /* Shutter Flash Animation */
+        #shutter-flash {
+            position: absolute;
+            inset: 0;
+            background: white;
+            opacity: 0;
+            pointer-events: none;
+            z-index: 95;
+            transition: opacity 0.05s ease-out;
+        }
+
+        #shutter-flash.flash {
+            opacity: 0.85;
+            transition: opacity 0.25s ease-in;
+        }
+
+        /* Orthopedic Alignment Grid */
+        #alignment-grid {
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            display: none;
+            z-index: 15;
+        }
+
+        #alignment-grid.active {
+            display: block;
+        }
+
+        .grid-line-h {
+            position: absolute;
             left: 0;
             right: 0;
-            z-index: 100;
-            backdrop-filter: blur(10px);
+            height: 1px;
+            background: rgba(255, 255, 255, 0.22);
         }
 
-        button {
-            padding: 0;
-            background: rgba(255, 255, 255, 0.2);
-            color: white;
-            border: none;
-            border-radius: 50%;
-            width: 50px;
-            height: 50px;
+        .grid-line-v {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            width: 1px;
+            background: rgba(255, 255, 255, 0.22);
+        }
+
+        .grid-crosshair {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 28px;
+            height: 28px;
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+        }
+
+        .grid-crosshair::before,
+        .grid-crosshair::after {
+            content: '';
+            position: absolute;
+            background: var(--accent-cyan);
+            opacity: 0.75;
+        }
+
+        .grid-crosshair::before {
+            top: 13px;
+            left: 0;
+            right: 0;
+            height: 2px;
+        }
+
+        .grid-crosshair::after {
+            left: 13px;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+        }
+
+        /* Top Utility HUD */
+        #top-hud {
+            position: absolute;
+            top: calc(var(--safe-top) + 8px);
+            left: 12px;
+            right: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            z-index: 50;
+            pointer-events: none;
+        }
+
+        #top-hud > * {
+            pointer-events: auto;
+        }
+
+        .status-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            padding: 6px 12px;
+            border-radius: var(--radius-pill);
+            background: var(--surface-glass);
+            border: 1px solid var(--border-glass);
+            backdrop-filter: blur(14px);
+            -webkit-backdrop-filter: blur(14px);
+            font-size: 12px;
+            font-weight: 500;
             cursor: pointer;
-            margin: 0 5px;
-            font-size: 20px;
+            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4);
+            transition: transform 0.15s ease;
+        }
+
+        .status-pill:active {
+            transform: scale(0.96);
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--accent-amber);
+            flex-shrink: 0;
+        }
+
+        .status-dot.success {
+            background: var(--accent-emerald);
+            box-shadow: 0 0 8px var(--accent-emerald);
+        }
+
+        .status-dot.cached {
+            background: var(--accent-cyan);
+            box-shadow: 0 0 8px var(--accent-cyan);
+        }
+
+        .status-dot.warning {
+            background: var(--accent-amber);
+            animation: pulse-dot 1.5s infinite;
+        }
+
+        .status-dot.error {
+            background: var(--accent-rose);
+        }
+
+        @keyframes pulse-dot {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.35; }
+        }
+
+        .top-action-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .hud-btn {
+            width: 38px;
+            height: 38px;
+            border-radius: var(--radius-pill);
+            background: var(--surface-glass);
+            border: 1px solid var(--border-glass);
+            backdrop-filter: blur(14px);
+            -webkit-backdrop-filter: blur(14px);
+            color: var(--text-primary);
             display: flex;
             align-items: center;
             justify-content: center;
-            transition: all 0.2s ease;
-        }
-
-        button:hover {
-            background: rgba(255, 255, 255, 0.3);
-            transform: scale(1.05);
-        }
-
-        #capture-btn {
-            background: #fff;
-            color: #000;
-            width: 65px;
-            height: 65px;
-            border-radius: 50%;
-            font-size: 28px;
+            cursor: pointer;
+            transition: all 0.18s ease;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
         }
 
-        #capture-btn:hover {
-            background: #f0f0f0;
-            transform: scale(1.05);
+        .hud-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+            border-color: rgba(255, 255, 255, 0.3);
         }
 
-        /* Replace the existing #overlay-container and #map-thumbnail styles with these: */
+        .hud-btn:active {
+            transform: scale(0.92);
+        }
 
-        #overlay-container {
+        .hud-btn.active {
+            background: var(--accent-cyan);
+            color: #000;
+            border-color: var(--accent-cyan);
+            box-shadow: 0 0 14px rgba(0, 229, 255, 0.45);
+        }
+
+        .hud-btn svg {
+            width: 19px;
+            height: 19px;
+            stroke-width: 2;
+            stroke: currentColor;
+            fill: none;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+
+        /* Unified Bottom Dock (Zero overlap on any screen) */
+        #bottom-dock {
             position: absolute;
-            bottom: 85px;
-            right: 16px;
-            left: 180px;
-            /* Make space for the map thumbnail on the left */
+            bottom: 0;
+            left: 0;
+            right: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            z-index: 50;
+            pointer-events: none;
+            background: linear-gradient(to top, rgba(0, 0, 0, 0.96) 0%, rgba(0, 0, 0, 0.82) 55%, rgba(0, 0, 0, 0.25) 85%, transparent 100%);
+            padding: 8px 12px calc(var(--safe-bottom) + 4px);
+        }
+
+        #bottom-dock > * {
+            pointer-events: auto;
+            width: 100%;
+            max-width: 520px;
+            margin: 0 auto;
+        }
+
+        /* Clinical Tags HUD Bar */
+        #clinical-hud {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .laterality-group {
+            display: inline-flex;
+            background: var(--surface-glass);
+            border: 1px solid var(--border-glass);
+            backdrop-filter: blur(14px);
+            -webkit-backdrop-filter: blur(14px);
+            border-radius: var(--radius-pill);
+            padding: 3px;
+            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4);
+        }
+
+        .lat-btn {
+            padding: 5px 11px;
+            border-radius: var(--radius-pill);
+            border: none;
+            background: transparent;
+            color: var(--text-secondary);
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 0.4px;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+
+        .lat-btn.active-none {
+            background: rgba(255, 255, 255, 0.15);
             color: white;
-            background: rgba(0, 0, 0, 0.85);
-            padding: 16px 20px;
-            font-family: 'Roboto', Arial, sans-serif;
-            backdrop-filter: blur(8px);
-            border-radius: 8px;
-            max-width: calc(100% - 196px);
-            /* Prevent overlay from being too wide */
+        }
+
+        .lat-btn.active-left {
+            background: var(--laterality-left);
+            color: white;
+            box-shadow: 0 0 10px rgba(37, 99, 235, 0.6);
+        }
+
+        .lat-btn.active-right {
+            background: var(--laterality-right);
+            color: #fff;
+            box-shadow: 0 0 10px rgba(217, 119, 6, 0.6);
+        }
+
+        .lat-btn.active-bilateral {
+            background: var(--laterality-both);
+            color: white;
+            box-shadow: 0 0 10px rgba(124, 58, 237, 0.6);
+        }
+
+        .stage-select-wrap {
+            position: relative;
+        }
+
+        .stage-select {
+            appearance: none;
+            -webkit-appearance: none;
+            background: var(--surface-glass);
+            border: 1px solid var(--border-glass);
+            backdrop-filter: blur(14px);
+            -webkit-backdrop-filter: blur(14px);
+            color: var(--text-primary);
+            padding: 6px 26px 6px 11px;
+            border-radius: var(--radius-pill);
+            font-size: 11px;
+            font-weight: 600;
+            cursor: pointer;
+            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4);
+            outline: none;
+        }
+
+        .stage-select:focus {
+            border-color: var(--accent-cyan);
+        }
+
+        .stage-select-icon {
+            position: absolute;
+            right: 9px;
+            top: 50%;
+            transform: translateY(-50%);
+            pointer-events: none;
+            color: var(--text-muted);
+            width: 12px;
+            height: 12px;
+        }
+
+        .case-tag-input {
+            background: var(--surface-glass);
+            border: 1px solid var(--border-glass);
+            backdrop-filter: blur(14px);
+            -webkit-backdrop-filter: blur(14px);
+            color: var(--text-primary);
+            padding: 6px 12px;
+            border-radius: var(--radius-pill);
+            font-size: 11px;
+            font-weight: 600;
+            width: 120px;
+            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4);
+            outline: none;
+            transition: width 0.2s ease, border-color 0.2s ease;
+        }
+
+        .case-tag-input::placeholder {
+            color: var(--text-muted);
+            font-weight: 400;
+        }
+
+        .case-tag-input:focus {
+            width: 155px;
+            border-color: var(--accent-cyan);
+        }
+
+        /* Geotag Card Overlay */
+        #geotag-card {
+            background: var(--surface-glass);
+            border: 1px solid var(--border-glass);
+            backdrop-filter: blur(18px);
+            -webkit-backdrop-filter: blur(18px);
+            border-radius: var(--radius-lg);
+            padding: 10px;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.55);
+            display: flex;
+            gap: 12px;
+            align-items: stretch;
+            position: relative;
+            transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        #geotag-card.minimized {
+            padding: 7px 14px;
+            border-radius: var(--radius-pill);
+            align-items: center;
+            cursor: pointer;
+        }
+
+        #geotag-card.minimized #map-thumbnail {
+            display: none;
+        }
+
+        #geotag-card.minimized .geotag-detail-rows {
+            display: none;
+        }
+
+        #geotag-card.minimized .geotag-badge-row {
+            margin-bottom: 0;
+        }
+
+        #geotag-card.minimized .geotag-minimized-summary {
+            display: flex;
+        }
+
+        .geotag-minimized-summary {
+            display: none;
+            align-items: center;
+            gap: 8px;
+            font-size: 12px;
+            color: var(--text-secondary);
+            width: 100%;
+            justify-content: space-between;
+        }
+
+        .min-summary-left {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            overflow: hidden;
+            white-space: nowrap;
+            text-overflow: ellipsis;
+        }
+
+        .min-summary-text {
+            color: var(--text-primary);
+            font-weight: 500;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
 
         #map-thumbnail {
-            position: absolute;
-            bottom: 85px;
-            left: 16px;
-            width: 160px;
-            height: 120px;
-            border-radius: 8px;
-            border: 2px solid rgba(255, 255, 255, 0.9);
+            width: 118px;
+            height: 84px;
+            border-radius: var(--radius-md);
+            border: 1.5px solid rgba(255, 255, 255, 0.3);
             overflow: hidden;
-            z-index: 10;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+            position: relative;
+            flex-shrink: 0;
+            background: #141e2e;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.4);
         }
 
-        /* For mobile responsiveness */
-        @media (max-width: 480px) {
-            #overlay-container {
-                left: 140px;
-                max-width: calc(100% - 156px);
-                padding: 12px 16px;
-            }
+        #map-thumbnail canvas,
+        #map-thumbnail div {
+            width: 100% !important;
+            height: 100% !important;
+        }
 
-            #map-thumbnail {
-                width: 120px;
-                height: 90px;
-            }
+        .geotag-info-col {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            gap: 2px;
+            min-width: 0;
+            padding-right: 22px;
+        }
+
+        .geotag-badge-row {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            margin-bottom: 3px;
+        }
+
+        .live-lat-badge {
+            display: inline-block;
+            padding: 2px 7px;
+            border-radius: 4px;
+            font-size: 10px;
+            font-weight: 800;
+            letter-spacing: 0.4px;
+            text-transform: uppercase;
+        }
+
+        .badge-left {
+            background: var(--laterality-left);
+            color: white;
+        }
+
+        .badge-right {
+            background: var(--laterality-right);
+            color: #fff;
+        }
+
+        .badge-bilateral {
+            background: var(--laterality-both);
+            color: white;
+        }
+
+        .live-stage-badge {
+            background: rgba(255, 255, 255, 0.14);
+            color: var(--text-primary);
+            font-size: 10px;
+            font-weight: 600;
+            padding: 2px 6px;
+            border-radius: 4px;
+        }
+
+        .live-case-badge {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 10px;
+            color: var(--accent-cyan);
+            background: rgba(0, 229, 255, 0.12);
+            padding: 2px 6px;
+            border-radius: 4px;
+        }
+
+        .geotag-address {
+            font-size: 12px;
+            font-weight: 600;
+            line-height: 1.3;
+            color: var(--text-primary);
+            overflow: hidden;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+        }
+
+        .geotag-coords {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 11px;
+            color: var(--accent-cyan);
+            letter-spacing: -0.2px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .geotag-accuracy {
+            font-size: 9.5px;
+            color: var(--text-muted);
+            font-family: 'Inter', sans-serif;
+            background: rgba(255, 255, 255, 0.08);
+            padding: 1px 5px;
+            border-radius: 3px;
+        }
+
+        .geotag-time {
+            font-size: 11px;
+            color: var(--text-secondary);
+        }
+
+        .collapse-toggle-btn {
+            position: absolute;
+            top: 7px;
+            right: 7px;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.12);
+            border: none;
+            color: var(--text-secondary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+        }
+
+        .collapse-toggle-btn svg {
+            width: 14px;
+            height: 14px;
+            stroke: currentColor;
+            stroke-width: 2.2;
+            fill: none;
+        }
+
+        /* Bottom Shutter Bar */
+        #bottom-bar {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+            padding-top: 2px;
+        }
+
+        /* Mode Selector */
+        .mode-selector {
+            display: flex;
+            align-items: center;
+            gap: 22px;
+            font-size: 12px;
+            font-weight: 700;
+            letter-spacing: 0.8px;
+        }
+
+        .mode-tab {
+            color: var(--text-muted);
+            cursor: pointer;
+            padding: 2px 4px;
+            position: relative;
+            transition: color 0.15s ease;
+        }
+
+        .mode-tab.active {
+            color: var(--accent-cyan);
+        }
+
+        .mode-tab.active::after {
+            content: '';
+            position: absolute;
+            bottom: -3px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 4px;
+            height: 4px;
+            border-radius: 50%;
+            background: var(--accent-cyan);
+        }
+
+        .controls-row {
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 8px;
+        }
+
+        /* Gallery Thumbnail */
+        #gallery-btn {
+            width: 48px;
+            height: 48px;
+            border-radius: var(--radius-md);
+            background: var(--surface-glass-subtle);
+            border: 2px solid rgba(255, 255, 255, 0.25);
+            padding: 0;
+            overflow: hidden;
+            cursor: pointer;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-muted);
+            transition: transform 0.15s ease, border-color 0.15s ease;
+        }
+
+        #gallery-btn:active {
+            transform: scale(0.92);
+        }
+
+        #gallery-btn img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: none;
+        }
+
+        #gallery-btn svg {
+            width: 22px;
+            height: 22px;
+            stroke: currentColor;
+            stroke-width: 2;
+            fill: none;
+        }
+
+        /* Shutter Trigger Button */
+        #shutter-trigger {
+            width: 74px;
+            height: 74px;
+            border-radius: 50%;
+            border: 4px solid white;
+            background: transparent;
+            padding: 4px;
+            cursor: pointer;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.12s ease;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.6);
+        }
+
+        #shutter-trigger:active {
+            transform: scale(0.93);
+        }
+
+        .shutter-inner {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            background: white;
+            transition: all 0.2s ease;
+        }
+
+        /* Video Mode */
+        #shutter-trigger.mode-video .shutter-inner {
+            background: var(--accent-rose);
+        }
+
+        #shutter-trigger.recording {
+            border-color: var(--accent-rose);
+            animation: record-pulse 1.2s infinite;
+        }
+
+        #shutter-trigger.recording .shutter-inner {
+            width: 30px;
+            height: 30px;
+            border-radius: 6px;
+            background: var(--accent-rose);
+        }
+
+        @keyframes record-pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        #video-timer {
+            position: absolute;
+            top: -34px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(244, 63, 94, 0.92);
+            color: white;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 13px;
+            font-weight: 700;
+            padding: 4px 12px;
+            border-radius: var(--radius-pill);
+            display: none;
+            align-items: center;
+            gap: 6px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.4);
+        }
+
+        .rec-dot {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background: white;
+            animation: pulse-dot 1s infinite;
+        }
+
+        /* Upload Button */
+        #upload-btn {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background: var(--surface-glass-subtle);
+            border: 1px solid var(--border-glass);
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: transform 0.15s ease;
+        }
+
+        #upload-btn:active {
+            transform: scale(0.92);
+        }
+
+        #upload-btn svg {
+            width: 22px;
+            height: 22px;
+            stroke: currentColor;
+            stroke-width: 2;
+            fill: none;
+        }
+
+        /* Review Modal */
+        #review-modal {
+            position: fixed;
+            inset: 0;
+            background: rgba(5, 8, 14, 0.94);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            z-index: 120;
+            display: none;
+            flex-direction: column;
+            padding: var(--safe-top) 16px var(--safe-bottom);
+        }
+
+        #review-modal.open {
+            display: flex;
+        }
+
+        .modal-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 4px;
+        }
+
+        .modal-title {
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        .modal-close-btn {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.1);
+            border: none;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+        }
+
+        .modal-close-btn svg {
+            width: 18px;
+            height: 18px;
+            stroke: currentColor;
+            stroke-width: 2.2;
+            fill: none;
+        }
+
+        .modal-img-wrap {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            border-radius: var(--radius-lg);
+            background: #000;
+            margin: 10px 0;
+            border: 1px solid var(--border-glass);
+        }
+
+        #review-image {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 12px;
+            padding: 8px 0 4px;
+        }
+
+        .btn-action {
+            flex: 1;
+            padding: 12px;
+            border-radius: var(--radius-md);
+            border: none;
+            font-size: 14px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            cursor: pointer;
+            transition: transform 0.15s ease;
+        }
+
+        .btn-action:active {
+            transform: scale(0.97);
+        }
+
+        .btn-primary {
+            background: var(--accent-cyan);
+            color: #07090e;
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.14);
+            color: white;
+        }
+
+        /* Toast Notifications */
+        #toast {
+            position: fixed;
+            top: calc(var(--safe-top) + 60px);
+            left: 50%;
+            transform: translateX(-50%) translateY(-20px);
+            background: rgba(14, 21, 33, 0.94);
+            color: white;
+            border: 1px solid var(--border-glass);
+            padding: 8px 18px;
+            border-radius: var(--radius-pill);
+            font-size: 13px;
+            font-weight: 500;
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+            opacity: 0;
+            pointer-events: none;
+            transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+            z-index: 200;
+        }
+
+        #toast.show {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+        }
+
+        /* Hospital Manual Location Dialog */
+        #location-modal {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.75);
+            backdrop-filter: blur(12px);
+            z-index: 150;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        #location-modal.open {
+            display: flex;
+        }
+
+        .dialog-card {
+            background: #111724;
+            border: 1px solid var(--border-glass);
+            border-radius: var(--radius-lg);
+            padding: 22px;
+            width: 100%;
+            max-width: 400px;
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+        }
+
+        .dialog-title {
+            font-size: 16px;
+            font-weight: 700;
+        }
+
+        .dialog-input {
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid var(--border-glass);
+            color: white;
+            padding: 10px 14px;
+            border-radius: var(--radius-md);
+            font-size: 14px;
+            outline: none;
+        }
+
+        .dialog-input:focus {
+            border-color: var(--accent-cyan);
+        }
+
+        .dialog-cache-info {
+            font-size: 12px;
+            color: var(--text-secondary);
+            background: rgba(255, 255, 255, 0.05);
+            padding: 8px 12px;
+            border-radius: var(--radius-md);
+            line-height: 1.4;
         }
 
         #photo-canvas {
             display: none;
-        }
-
-        .location-title {
-            font-size: 20px;
-            font-weight: 500;
-            margin-bottom: 8px;
-            color: #ffffff;
-        }
-
-        .address-detail {
-            font-size: 14px;
-            line-height: 1.4;
-            margin-bottom: 8px;
-            color: #e0e0e0;
-        }
-
-        .coordinates-info {
-            font-size: 14px;
-            margin-bottom: 4px;
-            color: #e0e0e0;
-        }
-
-        .timestamp-info {
-            font-size: 14px;
-            color: #b0b0b0;
-        }
-
-        #saving-indicator {
-            position: fixed;
-            top: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: rgba(0, 0, 0, 0.8);
-            color: white;
-            padding: 12px 20px;
-            border-radius: 25px;
-            font-size: 14px;
-            display: none;
-            z-index: 200;
-            backdrop-filter: blur(8px);
-        }
-
-        .status-indicator {
-            position: absolute;
-            top: 16px;
-            left: 16px;
-            background: rgba(0, 0, 0, 0.7);
-            color: white;
-            padding: 8px 12px;
-            border-radius: 16px;
-            font-size: 12px;
-            z-index: 15;
-            backdrop-filter: blur(4px);
-        }
-
-        .status-indicator.success {
-            background: rgba(16, 185, 129, 0.8);
-        }
-
-        .status-indicator.warning {
-            background: rgba(245, 158, 11, 0.8);
-        }
-
-        .status-indicator.error {
-            background: rgba(239, 68, 68, 0.8);
-        }
-
-        @media (min-width: 768px) {
-            #controls {
-                bottom: 20px;
-                left: 50%;
-                transform: translateX(-50%);
-                width: auto;
-                background: rgba(0, 0, 0, 0.8);
-                border-radius: 35px;
-                padding: 20px;
-            }
         }
     </style>
 </head>
@@ -229,708 +1008,1211 @@
 <body>
     <div id="app-container">
         <div id="camera-container">
-            <video id="camera-view" autoplay playsinline></video>
-            <canvas id="photo-canvas"></canvas>
-            <img id="photo-result" style="display:none;">
-            <div class="status-indicator" id="status-indicator">Getting location...</div>
-            <div id="overlay-container">
-                <!--<div class="location-title" id="location-title">Kakinada, Andhra Pradesh, India</div>-->
-                <div class="address-detail" id="address-text">Getting location...</div>
-                <div class="coordinates-info" id="coordinates-text"></div>
-                <div class="timestamp-info" id="time-text"></div>
+            <video id="camera-view" autoplay playsinline muted></video>
+            <div id="shutter-flash"></div>
+
+            <!-- Orthopedic Alignment Grid -->
+            <div id="alignment-grid">
+                <div class="grid-line-h" style="top: 33.33%;"></div>
+                <div class="grid-line-h" style="top: 66.66%;"></div>
+                <div class="grid-line-v" style="left: 33.33%;"></div>
+                <div class="grid-line-v" style="left: 66.66%;"></div>
+                <div class="grid-crosshair"></div>
             </div>
-            <div id="map-thumbnail"></div>
+
+            <!-- Top Utility HUD -->
+            <div id="top-hud">
+                <div class="status-pill" id="gps-status-pill" title="Tap to set facility or force refresh">
+                    <div class="status-dot warning" id="gps-status-dot"></div>
+                    <span id="gps-status-text">Loading location...</span>
+                </div>
+
+                <div class="top-action-group">
+                    <button class="hud-btn" id="torch-btn" title="Toggle Flashlight / Torch" aria-label="Flashlight">
+                        <svg viewBox="0 0 24 24"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+                    </button>
+                    <button class="hud-btn" id="grid-btn" title="Toggle Orthopedic Alignment Grid" aria-label="Grid">
+                        <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18M15 3v18"/></svg>
+                    </button>
+                    <button class="hud-btn" id="flip-camera-btn" title="Switch Front/Rear Lens" aria-label="Switch Camera">
+                        <svg viewBox="0 0 24 24"><path d="M20 7h-3a2 2 0 0 1-2-2V4a2 2 0 0 0-2-2h-2a2 2 0 0 0-2 2v1a2 2 0 0 1-2 2H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2z"/><circle cx="12" cy="13" r="4"/><path d="M1 4l3 3-3 3M23 4l-3 3 3 3"/></svg>
+                    </button>
+                    <button class="hud-btn" id="overlay-toggle-btn" title="Toggle Overlay Visibility" aria-label="Toggle Overlay">
+                        <svg viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Unified Bottom Dock Stack (Never overlaps) -->
+            <div id="bottom-dock">
+                <!-- Clinical Metadata HUD -->
+                <div id="clinical-hud">
+                    <div class="laterality-group" title="Select Anatomical Side">
+                        <button class="lat-btn active-none" data-lat="NONE">NONE</button>
+                        <button class="lat-btn" data-lat="LEFT">LEFT (L)</button>
+                        <button class="lat-btn" data-lat="RIGHT">RIGHT (R)</button>
+                        <button class="lat-btn" data-lat="BILATERAL">BILAT</button>
+                    </div>
+
+                    <div class="stage-select-wrap">
+                        <select class="stage-select" id="stage-select" title="Clinical Stage">
+                            <option value="PRE-OP">Pre-Op</option>
+                            <option value="INTRA-OP">Intra-Op</option>
+                            <option value="POST-OP" selected>Post-Op</option>
+                            <option value="FOLLOW-UP">Follow-Up</option>
+                            <option value="TRAUMA">Trauma / Acute</option>
+                            <option value="WOUND">Wound Care</option>
+                        </select>
+                        <svg class="stage-select-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M6 9l6 6 6-6" stroke-width="2.5" stroke-linecap="round"/></svg>
+                    </div>
+
+                    <input type="text" class="case-tag-input" id="case-tag-input" placeholder="Case # / UHID" maxlength="24" title="Patient Identifier or MRN">
+                </div>
+
+                <!-- Geotag & Hospital Map Card Overlay -->
+                <div id="geotag-card">
+                    <button class="collapse-toggle-btn" id="collapse-card-btn" title="Minimize or Expand Geotag">
+                        <svg viewBox="0 0 24 24"><path d="M18 15l-6-6-6 6"/></svg>
+                    </button>
+
+                    <div id="map-thumbnail"></div>
+
+                    <div class="geotag-info-col">
+                        <div class="geotag-badge-row">
+                            <span class="live-lat-badge" id="live-lat-badge" style="display:none;"></span>
+                            <span class="live-stage-badge" id="live-stage-badge">POST-OP</span>
+                            <span class="live-case-badge" id="live-case-badge" style="display:none;"></span>
+                        </div>
+
+                        <div class="geotag-detail-rows">
+                            <div class="geotag-address" id="address-text">Hospital location...</div>
+                            <div class="geotag-coords">
+                                <span id="coordinates-text">--.------, --.------</span>
+                                <span class="geotag-accuracy" id="accuracy-text">±--m</span>
+                            </div>
+                            <div class="geotag-time" id="time-text">--/--/----, --:--:--</div>
+                        </div>
+
+                        <div class="geotag-minimized-summary">
+                            <div class="min-summary-left">
+                                <span>📍</span>
+                                <span class="min-summary-text" id="min-summary-address">Locating...</span>
+                            </div>
+                            <span id="min-summary-time">--:--</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Shutter & Mode Controls -->
+                <div id="bottom-bar">
+                    <div class="mode-selector">
+                        <span class="mode-tab active" id="tab-photo">PHOTO</span>
+                        <span class="mode-tab" id="tab-video">VIDEO</span>
+                    </div>
+
+                    <div class="controls-row">
+                        <!-- Gallery Review Thumbnail -->
+                        <button id="gallery-btn" title="View Recent Photo" aria-label="Recent Photo">
+                            <img id="gallery-thumb-img" alt="Last capture">
+                            <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
+                        </button>
+
+                        <!-- Shutter Button -->
+                        <button id="shutter-trigger" title="Take Clinical Photo" aria-label="Shutter">
+                            <div class="shutter-inner"></div>
+                            <div id="video-timer">
+                                <div class="rec-dot"></div>
+                                <span id="video-timer-text">00:00</span>
+                            </div>
+                        </button>
+
+                        <!-- Upload Photo -->
+                        <button id="upload-btn" title="Upload and Geotag Existing Image" aria-label="Upload File">
+                            <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>
+                        </button>
+                    </div>
+                </div>
+            </div>
         </div>
-        <div id="controls" style="display:none;">
-            <button id="record-toggle" title="Start Recording">🎥</button>
-            <button id="capture-btn" title="Capture">📷</button>
-            <button id="upload-btn" title="Upload">📁</button>
-        </div>
-        <div id="saving-indicator">Saving photo...</div>
     </div>
 
-    <script>
-        // Initialize variables
-        let cameraStream = null;
-        let currentCamera = 'environment';
-        let map;
-        let marker;
-        let currentLocation = null;
-        let photoData = [];
-        let addressInfo = "Getting location...";
-        let locationStatus = 'getting';
+    <!-- Hidden Processing Canvas -->
+    <canvas id="photo-canvas"></canvas>
 
+    <!-- Quick Review Modal -->
+    <div id="review-modal">
+        <div class="modal-header">
+            <span class="modal-title">Clinical Capture Review</span>
+            <button class="modal-close-btn" id="modal-close-btn" aria-label="Close">
+                <svg viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg>
+            </button>
+        </div>
+        <div class="modal-img-wrap">
+            <img id="review-image" alt="Full review">
+        </div>
+        <div class="modal-actions">
+            <button class="btn-action btn-secondary" id="modal-share-btn">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8M16 6l-4-4-4 4M12 2v13"/></svg>
+                Share / Send
+            </button>
+            <button class="btn-action btn-primary" id="modal-download-btn">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+                Save Photo
+            </button>
+        </div>
+    </div>
+
+    <!-- Manual Location & Cache Dialog -->
+    <div id="location-modal">
+        <div class="dialog-card">
+            <div class="dialog-title">Hospital Location & Smart Caching</div>
+            <p style="font-size: 13px; color: var(--text-secondary);">Your hospital GPS and satellite maps are cached so photos capture in a split second without waiting for network or satellites.</p>
+
+            <div class="dialog-cache-info" id="cache-info-box">
+                Cache status: Loading...
+            </div>
+
+            <input type="text" class="dialog-input" id="custom-hospital-input" placeholder="e.g. Apollo Hospital, Ortho OT 3">
+
+            <div style="display: flex; gap: 8px; justify-content: space-between; align-items: center; margin-top: 4px;">
+                <button class="btn-action btn-secondary" style="flex: none; padding: 8px 12px; font-size: 12px;" id="force-refresh-gps-btn" title="Re-fetch fresh GPS coordinates and satellite map">
+                    🔄 Refresh GPS & Map
+                </button>
+                <div style="display: flex; gap: 8px;">
+                    <button class="btn-action btn-secondary" style="flex: none; padding: 8px 14px;" id="cancel-hospital-btn">Cancel</button>
+                    <button class="btn-action btn-primary" style="flex: none; padding: 8px 16px;" id="save-hospital-btn">Save</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast">Notice</div>
+
+    <!-- Application Logic -->
+    <script>
         const GOOGLE_MAPS_API_KEY = 'AIzaSyBxiP-VOE5ROHLNKnZRwJEYpbKtZmHtWa0';
+        const LOCATION_CACHE_KEY = 'orthocam_location_cache_v1';
+        const SIGNIFICANT_DISTANCE_METERS = 150; // Geofence threshold: hospital campus boundary
+
+        let cameraStream = null;
+        let currentFacingMode = 'environment';
+        let isTorchOn = false;
+        let isGridActive = false;
+        let isOverlayMinimized = false;
+        let currentMode = 'photo';
+
+        // Clinical Metadata
+        let currentLaterality = 'NONE';
+        let currentStage = 'POST-OP';
+        let currentCaseId = '';
+        let manualHospitalName = '';
+
+        // Location & Map State
+        let currentLocation = null;
+        let addressInfo = "Hospital Location";
+        let isUsingCachedLocation = false;
+        let map = null;
+        let mapMarker = null;
+        let staticMapImage = null;
+        let lastCapturedImageData = null;
+
+        // Video Recording State
+        let isRecording = false;
+        let mediaRecorder = null;
+        let recordedChunks = [];
+        let videoTimerInterval = null;
+        let recordingStartTime = 0;
+        let videoCanvas = document.createElement('canvas');
+        let videoCtx = videoCanvas.getContext('2d');
+        let recordingMimeType = 'video/mp4';
 
         // DOM Elements
         const cameraView = document.getElementById('camera-view');
+        const shutterTrigger = document.getElementById('shutter-trigger');
+        const shutterFlash = document.getElementById('shutter-flash');
         const photoCanvas = document.getElementById('photo-canvas');
-        const photoResult = document.getElementById('photo-result');
-        const captureBtn = document.getElementById('capture-btn');
-        const uploadBtn = document.getElementById('upload-btn');
-        const overlayContainer = document.getElementById('overlay-container');
-        //const locationTitle = document.getElementById('location-title');
+        const gpsStatusPill = document.getElementById('gps-status-pill');
+        const gpsStatusDot = document.getElementById('gps-status-dot');
+        const gpsStatusText = document.getElementById('gps-status-text');
+        const torchBtn = document.getElementById('torch-btn');
+        const gridBtn = document.getElementById('grid-btn');
+        const alignmentGrid = document.getElementById('alignment-grid');
+        const flipCameraBtn = document.getElementById('flip-camera-btn');
+        const overlayToggleBtn = document.getElementById('overlay-toggle-btn');
+        const geotagCard = document.getElementById('geotag-card');
+        const collapseCardBtn = document.getElementById('collapse-card-btn');
+        const clinicalHud = document.getElementById('clinical-hud');
+        const mapThumbnail = document.getElementById('map-thumbnail');
+
         const addressText = document.getElementById('address-text');
         const coordinatesText = document.getElementById('coordinates-text');
+        const accuracyText = document.getElementById('accuracy-text');
         const timeText = document.getElementById('time-text');
-        const mapThumbnail = document.getElementById('map-thumbnail');
-        const savingIndicator = document.getElementById('saving-indicator');
-        const statusIndicator = document.getElementById('status-indicator');
-        const recordBtn = document.getElementById('record-toggle');
-        const controls = document.getElementById("controls");
+        const minSummaryAddress = document.getElementById('min-summary-address');
+        const minSummaryTime = document.getElementById('min-summary-time');
 
+        const liveLatBadge = document.getElementById('live-lat-badge');
+        const liveStageBadge = document.getElementById('live-stage-badge');
+        const liveCaseBadge = document.getElementById('live-case-badge');
+        const stageSelect = document.getElementById('stage-select');
+        const caseTagInput = document.getElementById('case-tag-input');
+        const latButtons = document.querySelectorAll('.lat-btn');
 
-        // Initialize the application
-        async function initApp() {
-            updateStatus('Getting camera access...', 'warning');
-            await initCamera();
-            updateStatus('Getting location...', 'warning');
+        const tabPhoto = document.getElementById('tab-photo');
+        const tabVideo = document.getElementById('tab-video');
+        const videoTimer = document.getElementById('video-timer');
+        const videoTimerText = document.getElementById('video-timer-text');
+        const galleryBtn = document.getElementById('gallery-btn');
+        const galleryThumbImg = document.getElementById('gallery-thumb-img');
+        const uploadBtn = document.getElementById('upload-btn');
 
-            loadGoogleMapsAPI();
-            startLocationTracking();
+        const reviewModal = document.getElementById('review-modal');
+        const reviewImage = document.getElementById('review-image');
+        const modalCloseBtn = document.getElementById('modal-close-btn');
+        const modalDownloadBtn = document.getElementById('modal-download-btn');
+        const modalShareBtn = document.getElementById('modal-share-btn');
 
-            // Set up event listeners
-            captureBtn.addEventListener('click', captureAndSavePhoto);
-            uploadBtn.addEventListener('click', uploadPhoto);
+        const locationModal = document.getElementById('location-modal');
+        const customHospitalInput = document.getElementById('custom-hospital-input');
+        const cacheInfoBox = document.getElementById('cache-info-box');
+        const saveHospitalBtn = document.getElementById('save-hospital-btn');
+        const cancelHospitalBtn = document.getElementById('cancel-hospital-btn');
+        const forceRefreshGpsBtn = document.getElementById('force-refresh-gps-btn');
+        const toast = document.getElementById('toast');
 
-            recordBtn.addEventListener('click', () => {
-                if (!isRecording) {
-                    startRecording();
-                } else {
-                    stopRecording();
-                }
-            });
+        function showToast(message, duration = 2400) {
+            toast.textContent = message;
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), duration);
         }
 
-        // Update status indicator
-        function updateStatus(message, type = 'warning') {
-            statusIndicator.textContent = message;
-            statusIndicator.className = `status-indicator ${type}`;
-
-            if (type === 'success') {
-                setTimeout(() => {
-                    statusIndicator.style.opacity = '0.7';
-                }, 2000);
+        function triggerHaptics(pattern = [35]) {
+            if (navigator.vibrate) {
+                try { navigator.vibrate(pattern); } catch (e) {}
             }
         }
 
-        // Load Google Maps API with proper async loading
-        function loadGoogleMapsAPI() {
-            return new Promise((resolve, reject) => {
-                if (window.google && window.google.maps) {
-                    initMap();
-                    resolve();
-                    return;
-                }
-
-                window.initMapCallback = () => {
-                    initMap();
-                    resolve();
-                };
-
-                const script = document.createElement('script');
-                script.src = `https://maps.googleapis.com/maps/api/js?key=${GOOGLE_MAPS_API_KEY}&callback=initMapCallback&loading=async`;
-                script.async = true;
-                script.defer = true;
-                script.onerror = () => {
-                    console.error('Failed to load Google Maps API');
-                    updateStatus('Map unavailable', 'error');
-                    reject(new Error('Failed to load Google Maps API'));
-                };
-
-                document.head.appendChild(script);
-            });
-        }
-
-        // Initialize Google Map with satellite view
-        function initMap() {
+        function playShutterSound() {
             try {
-                const mapOptions = {
-                    zoom: 17, // Increased zoom for better satellite detail
-                    center: { lat: 16.9834, lng: 82.2527 },
-                    mapTypeId: 'satellite', // Ensure satellite view
-                    disableDefaultUI: true,
-                    zoomControl: false,
-                    mapTypeControl: false,
-                    scaleControl: false,
-                    streetViewControl: false,
-                    rotateControl: false,
-                    fullscreenControl: false,
-                    gestureHandling: 'none',
-                    styles: [] // Clear any custom styles that might interfere
-                };
-
-                map = new google.maps.Map(mapThumbnail, mapOptions);
-
-                // Custom marker for better visibility on satellite
-                marker = new google.maps.Marker({
-                    position: { lat: 16.9834, lng: 82.2527 },
-                    map: map,
-                    icon: {
-                        url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
-                            <svg width="30" height="30" viewBox="0 0 30 30" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                <circle cx="15" cy="15" r="12" fill="#FF0000" stroke="#FFFFFF" stroke-width="3"/>
-                                <circle cx="15" cy="15" r="6" fill="#FFFFFF"/>
-                                <circle cx="15" cy="15" r="3" fill="#FF0000"/>
-                            </svg>
-                        `),
-                        scaledSize: new google.maps.Size(30, 30),
-                        anchor: new google.maps.Point(15, 15)
-                    }
-                });
-            } catch (error) {
-                console.error('Error initializing Google Maps:', error);
-                updateStatus('Map initialization failed', 'error');
-            }
+                const AudioCtx = window.AudioContext || window.webkitAudioContext;
+                if (!AudioCtx) return;
+                const ctx = new AudioCtx();
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.frequency.setValueAtTime(800, ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(220, ctx.currentTime + 0.08);
+                gain.gain.setValueAtTime(0.25, ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.08);
+                osc.start();
+                osc.stop(ctx.currentTime + 0.08);
+            } catch (e) {}
         }
 
-        // Initialize camera
-        async function initCamera() {
+        // Haversine Distance Formula (meters)
+        function getDistanceMeters(lat1, lon1, lat2, lon2) {
+            const R = 6371e3;
+            const φ1 = lat1 * Math.PI / 180;
+            const φ2 = lat2 * Math.PI / 180;
+            const Δφ = (lat2 - lat1) * Math.PI / 180;
+            const Δλ = (lon2 - lon1) * Math.PI / 180;
+            const a = Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
+                      Math.cos(φ1) * Math.cos(φ2) *
+                      Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+            return R * c;
+        }
+
+        // ==========================================
+        // SMART LOCATION CACHE SYSTEM (Instant Boot)
+        // ==========================================
+        function loadCachedLocation() {
             try {
-                const constraints = {
-                    video: {
-                        facingMode: currentCamera,
-                        width: { ideal: 1920 },
-                        height: { ideal: 1080 }
-                    }
+                const cachedRaw = localStorage.getItem(LOCATION_CACHE_KEY);
+                if (!cachedRaw) return false;
+
+                const cached = JSON.parse(cachedRaw);
+                if (!cached.lat || !cached.lng) return false;
+
+                currentLocation = {
+                    lat: cached.lat,
+                    lng: cached.lng,
+                    accuracy: cached.accuracy || 10,
+                    timestamp: new Date()
                 };
 
-                cameraStream = await navigator.mediaDevices.getUserMedia(constraints);
-                cameraView.srcObject = cameraStream;
-                updateStatus('Camera ready', 'success');
-            } catch (err) {
-                console.error("Camera error: ", err);
-                updateStatus('Camera access denied', 'error');
-                alert("Could not access the camera. Please check permissions and try again.");
+                addressInfo = cached.address || "Hospital Location";
+                manualHospitalName = cached.manualHospitalName || '';
+                isUsingCachedLocation = true;
+
+                // Restore Cached Static Satellite Map
+                if (cached.mapDataUrl) {
+                    const img = new Image();
+                    img.onload = () => { staticMapImage = img; };
+                    img.src = cached.mapDataUrl;
+                }
+
+                updateLocationStatus('Hospital Locked (Instant Cache)', 'cached');
+                updateLocationUI();
+                return true;
+            } catch (e) {
+                console.warn("Could not load location cache:", e);
+                return false;
             }
         }
 
-        // Start tracking location
+        function saveLocationToCache(lat, lng, accuracy, address, manualName, mapImg) {
+            try {
+                let mapDataUrl = '';
+                if (mapImg && mapImg.complete && mapImg.naturalWidth) {
+                    const c = document.createElement('canvas');
+                    c.width = mapImg.naturalWidth || 180;
+                    c.height = mapImg.naturalHeight || 135;
+                    const ctx = c.getContext('2d');
+                    ctx.drawImage(mapImg, 0, 0, c.width, c.height);
+                    mapDataUrl = c.toDataURL('image/jpeg', 0.85);
+                }
+
+                const payload = {
+                    lat,
+                    lng,
+                    accuracy,
+                    address,
+                    manualHospitalName: manualName,
+                    mapDataUrl: mapDataUrl || (staticMapImage ? staticMapImage.src : ''),
+                    savedAt: Date.now()
+                };
+                localStorage.setItem(LOCATION_CACHE_KEY, JSON.stringify(payload));
+            } catch (e) {
+                console.warn("Could not save location cache:", e);
+            }
+        }
+
+        // Update Location HUD Elements
+        function updateLocationStatus(text, type = 'warning') {
+            gpsStatusText.textContent = text;
+            gpsStatusDot.className = `status-dot ${type}`;
+        }
+
+        function updateLocationUI() {
+            const now = new Date();
+            const dateStr = now.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+            const timeFormatted = now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
+            const fullTime = `${dateStr} • ${timeFormatted} IST`;
+
+            const displayAddress = manualHospitalName || addressInfo;
+            addressText.textContent = displayAddress;
+            minSummaryAddress.textContent = displayAddress;
+
+            if (currentLocation) {
+                coordinatesText.textContent = `${currentLocation.lat.toFixed(5)}°, ${currentLocation.lng.toFixed(5)}°`;
+                accuracyText.textContent = `±${currentLocation.accuracy}m`;
+            } else {
+                coordinatesText.textContent = 'Awaiting lock...';
+                accuracyText.textContent = '±--m';
+            }
+
+            timeText.textContent = fullTime;
+            minSummaryTime.textContent = timeFormatted;
+        }
+
+        setInterval(updateLocationUI, 1000);
+
+        // Geolocation with Geofence / Significant Motion Detection
         function startLocationTracking() {
             if (!navigator.geolocation) {
-                addressInfo = "Geolocation not supported";
-                updateStatus('Location not supported', 'error');
-                updateLocationOverlay();
+                if (!currentLocation) {
+                    updateLocationStatus('GPS Unavailable', 'error');
+                    addressInfo = manualHospitalName || "Hospital Location";
+                    updateLocationUI();
+                }
                 return;
+            }
+
+            if (!currentLocation) {
+                updateLocationStatus('Acquiring GPS...', 'warning');
             }
 
             const options = {
                 enableHighAccuracy: true,
                 timeout: 15000,
-                maximumAge: 30000
+                maximumAge: 15000
             };
 
-            navigator.geolocation.getCurrentPosition(
-                async position => {
-                    await handleLocationSuccess(position);
-
-                    navigator.geolocation.watchPosition(
-                        handleLocationSuccess,
-                        handleLocationError,
-                        { enableHighAccuracy: true, maximumAge: 10000 }
-                    );
-                },
-                handleLocationError,
-                options
-            );
+            navigator.geolocation.getCurrentPosition(handleLocationSuccess, handleLocationError, options);
+            navigator.geolocation.watchPosition(handleLocationSuccess, handleLocationError, {
+                enableHighAccuracy: true,
+                maximumAge: 20000
+            });
         }
 
+        async function handleLocationSuccess(position) {
+            const newLat = position.coords.latitude;
+            const newLng = position.coords.longitude;
+            const newAccuracy = Math.round(position.coords.accuracy);
 
+            // Check if we already have a location (cached or previous)
+            if (currentLocation) {
+                const distanceDelta = getDistanceMeters(currentLocation.lat, currentLocation.lng, newLat, newLng);
 
-        // Handle location errors
-        function handleLocationError(error) {
-            console.error("Geolocation error: ", error);
-
-            let errorMessage = "Location unavailable";
-            switch (error.code) {
-                case error.PERMISSION_DENIED:
-                    errorMessage = "Location access denied";
-                    break;
-                case error.POSITION_UNAVAILABLE:
-                    errorMessage = "Location unavailable";
-                    break;
-                case error.TIMEOUT:
-                    errorMessage = "Location timeout";
-                    break;
+                // If within hospital campus (< 150 meters), REUSE cached maps & address!
+                if (distanceDelta < SIGNIFICANT_DISTANCE_METERS && staticMapImage) {
+                    currentLocation.accuracy = newAccuracy;
+                    currentLocation.timestamp = new Date(position.timestamp);
+                    isUsingCachedLocation = false;
+                    const statusLabel = newAccuracy <= 15 ? `GPS Verified (±${newAccuracy}m)` : `GPS ±${newAccuracy}m`;
+                    updateLocationStatus(statusLabel, 'success');
+                    updateLocationUI();
+                    return;
+                }
             }
 
-            addressInfo = errorMessage;
-            locationStatus = 'error';
-            updateStatus(errorMessage, 'error');
-            updateLocationOverlay();
+            // Location changed significantly (> 150m) or first time run
+            currentLocation = {
+                lat: newLat,
+                lng: newLng,
+                accuracy: newAccuracy,
+                timestamp: new Date(position.timestamp)
+            };
+            isUsingCachedLocation = false;
+
+            const statusLabel = newAccuracy <= 15 ? `GPS Locked (±${newAccuracy}m)` : `GPS ±${newAccuracy}m`;
+            updateLocationStatus(statusLabel, 'success');
+
+            if (!manualHospitalName) {
+                await getAddressFromCoordinates(newLat, newLng);
+            }
+
+            await loadStaticMapImage();
+            saveLocationToCache(newLat, newLng, newAccuracy, addressInfo, manualHospitalName, staticMapImage);
+
+            updateLocationUI();
+            updateLiveMapPosition();
         }
 
-        // Get address from coordinates
+        function handleLocationError(error) {
+            console.warn("GPS notice:", error);
+            if (!currentLocation) {
+                updateLocationStatus(manualHospitalName ? 'Hospital Set' : 'Indoor / Low Signal', 'warning');
+                if (!manualHospitalName) {
+                    addressInfo = "Indoor / Hospital Location (Tap to label)";
+                }
+                updateLocationUI();
+            }
+        }
+
         async function getAddressFromCoordinates(lat, lng) {
             try {
-                const response = await fetch(
-                    `https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&key=${GOOGLE_MAPS_API_KEY}`
-                );
+                const url = `https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&key=${GOOGLE_MAPS_API_KEY}`;
+                const response = await fetch(url);
                 if (response.ok) {
                     const data = await response.json();
                     if (data.results && data.results.length > 0) {
                         addressInfo = data.results[0].formatted_address;
                     }
                 }
-            } catch (error) {
-                console.error("Geocoding error:", error);
-                addressInfo = `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
+            } catch (err) {
+                console.warn("Geocoding network error:", err);
+                addressInfo = `${lat.toFixed(5)}°, ${lng.toFixed(5)}°`;
             }
         }
 
-        // Update location text overlay to match Android app style
-        function updateLocationOverlay() {
-            if (currentLocation) {
-                // Extract city/area from address
-                const cityMatch = addressInfo.match(/([^,]+,\s*[^,]+,\s*[^,]+)/);
-                const cityPart = cityMatch ? cityMatch[0] : "Location Found";
+        // Static Google Map Image Caching
+        async function loadStaticMapImage() {
+            if (!currentLocation) return;
+            try {
+                const zoom = 17;
+                const w = 180;
+                const h = 135;
+                const url = `https://maps.googleapis.com/maps/api/staticmap?center=${currentLocation.lat},${currentLocation.lng}&zoom=${zoom}&size=${w}x${h}&maptype=satellite&markers=color:red%7Csize:mid%7C${currentLocation.lat},${currentLocation.lng}&scale=2&key=${GOOGLE_MAPS_API_KEY}`;
 
-                const dateStr = currentLocation.timestamp.toLocaleString('en-GB', {
-                    day: '2-digit',
-                    month: '2-digit',
-                    year: 'numeric',
-                    hour: '2-digit',
-                    minute: '2-digit',
-                    hour12: true,
-                    timeZoneName: 'short'
+                const img = new Image();
+                img.crossOrigin = 'anonymous';
+                await new Promise((resolve, reject) => {
+                    img.onload = () => { staticMapImage = img; resolve(); };
+                    img.onerror = () => { reject(); };
+                    img.src = url;
+                });
+            } catch (e) {
+                console.warn("Static map fetch skipped or offline, using current/fallback map");
+            }
+        }
+
+        // Live Google Maps Interactive Component
+        function initGoogleMapsAPI() {
+            if (window.google && window.google.maps) {
+                initLiveMap();
+                return;
+            }
+
+            window.initMapCallback = () => initLiveMap();
+            const script = document.createElement('script');
+            script.src = `https://maps.googleapis.com/maps/api/js?key=${GOOGLE_MAPS_API_KEY}&callback=initMapCallback&loading=async`;
+            script.async = true;
+            script.defer = true;
+            script.onerror = () => drawVectorMapFallback();
+            document.head.appendChild(script);
+        }
+
+        function initLiveMap() {
+            try {
+                const defaultCenter = { lat: 16.9834, lng: 82.2527 };
+                map = new google.maps.Map(mapThumbnail, {
+                    zoom: 17,
+                    center: currentLocation ? { lat: currentLocation.lat, lng: currentLocation.lng } : defaultCenter,
+                    mapTypeId: 'satellite',
+                    disableDefaultUI: true,
+                    gestureHandling: 'none'
                 });
 
-                //locationTitle.textContent = cityPart;
-                addressText.textContent = addressInfo;
-                coordinatesText.textContent = `Lat ${currentLocation.lat.toFixed(6)}° Long ${currentLocation.lng.toFixed(6)}°`;
-                timeText.textContent = dateStr;
-            } else {
-                //locationTitle.textContent = "Kakinada, Andhra Pradesh, India";
-                addressText.textContent = addressInfo;
-                coordinatesText.textContent = "Coordinates unavailable";
-                timeText.textContent = new Date().toLocaleString('en-GB', {
-                    day: '2-digit',
-                    month: '2-digit',
-                    year: 'numeric',
-                    hour: '2-digit',
-                    minute: '2-digit',
-                    hour12: true,
-                    timeZoneName: 'short'
+                mapMarker = new google.maps.Marker({
+                    position: map.getCenter(),
+                    map: map,
+                    icon: {
+                        path: google.maps.SymbolPath.CIRCLE,
+                        scale: 6,
+                        fillColor: '#EF4444',
+                        fillOpacity: 1,
+                        strokeColor: '#FFFFFF',
+                        strokeWeight: 2
+                    }
                 });
+            } catch (e) {
+                drawVectorMapFallback();
             }
         }
 
-        // Update Google Map position
-        function updateMap() {
-            if (currentLocation && map && marker) {
-                const position = { lat: currentLocation.lat, lng: currentLocation.lng };
-                map.setCenter(position);
-                marker.setPosition(position);
-                // Ensure satellite view is maintained
-                map.setMapTypeId('satellite');
+        function updateLiveMapPosition() {
+            if (map && mapMarker && currentLocation) {
+                const pos = { lat: currentLocation.lat, lng: currentLocation.lng };
+                map.setCenter(pos);
+                mapMarker.setPosition(pos);
             }
         }
 
-        // Capture and save photo
-        async function captureAndSavePhoto() {
-            if (!cameraStream) {
-                alert("Camera not available");
+        function drawVectorMapFallback() {
+            mapThumbnail.innerHTML = `
+                <svg width="100%" height="100%" viewBox="0 0 160 120" style="background:#13221b;">
+                    <rect width="160" height="120" fill="#162e24"/>
+                    <path d="M0,35 Q60,30 110,65 T160,80" stroke="#334155" stroke-width="6" fill="none"/>
+                    <path d="M40,0 Q60,50 85,120" stroke="#475569" stroke-width="4" fill="none"/>
+                    <circle cx="85" cy="60" r="10" fill="rgba(239,68,68,0.25)"/>
+                    <circle cx="85" cy="60" r="5" fill="#EF4444" stroke="#FFF" stroke-width="2"/>
+                    <text x="8" y="112" font-family="Inter,sans-serif" font-size="10" fill="#94a3b8" font-weight="600">GEOTAG</text>
+                </svg>
+            `;
+        }
+
+        // Camera Initialization
+        async function initCamera() {
+            if (cameraStream) {
+                cameraStream.getTracks().forEach(track => track.stop());
+                cameraStream = null;
+            }
+
+            const constraints = {
+                video: {
+                    facingMode: currentFacingMode,
+                    width: { ideal: 1920 },
+                    height: { ideal: 1080 }
+                },
+                audio: false
+            };
+
+            try {
+                cameraStream = await navigator.mediaDevices.getUserMedia(constraints);
+                cameraView.srcObject = cameraStream;
+                isTorchOn = false;
+                torchBtn.classList.remove('active');
+            } catch (err) {
+                try {
+                    cameraStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+                    cameraView.srcObject = cameraStream;
+                } catch (fallbackErr) {
+                    console.error("Camera access error:", fallbackErr);
+                    showToast("Camera access error. Check permissions.");
+                }
+            }
+        }
+
+        // Torch / Flashlight
+        async function toggleTorch() {
+            if (!cameraStream) return;
+            const track = cameraStream.getVideoTracks()[0];
+            if (!track) return;
+
+            const capabilities = track.getCapabilities ? track.getCapabilities() : {};
+            if (!capabilities.torch) {
+                showToast("Flashlight unavailable on this lens");
                 return;
             }
 
             try {
-                savingIndicator.style.display = 'block';
-
-                const context = photoCanvas.getContext('2d');
-                photoCanvas.width = cameraView.videoWidth;
-                photoCanvas.height = cameraView.videoHeight;
-
-                context.drawImage(cameraView, 0, 0, photoCanvas.width, photoCanvas.height);
-
-                await addOverlayToCanvas(context);
-
-                const dateStr = new Date().toISOString()
-                    .replace(/[:.]/g, '-')
-                    .replace('T', '_')
-                    .substring(0, 19);
-
-                const imageData = photoCanvas.toDataURL('image/jpeg', 0.9);
-                savePhotoToDevice(imageData, `OrthoCam_${dateStr}.jpg`);
-
-                photoData.push({
-                    imageData: imageData,
-                    location: currentLocation,
-                    address: addressInfo,
-                    timestamp: new Date()
-                });
-
-                photoResult.src = imageData;
-                photoResult.style.display = 'block';
-                cameraView.style.display = 'none';
-
-                setTimeout(() => {
-                    photoResult.style.display = 'none';
-                    cameraView.style.display = 'block';
-                }, 1500);
-
-            } catch (error) {
-                console.error("Error capturing/saving photo:", error);
-                alert("Error saving photo. Please try again.");
-            } finally {
-                savingIndicator.style.display = 'none';
+                isTorchOn = !isTorchOn;
+                await track.applyConstraints({ advanced: [{ torch: isTorchOn }] });
+                torchBtn.classList.toggle('active', isTorchOn);
+                triggerHaptics([25]);
+            } catch (err) {
+                console.error("Torch error:", err);
+                showToast("Unable to toggle flashlight");
             }
         }
 
-
-
-        // Enhanced fallback map drawing
-        function drawMapFallback(ctx, canvas, position) {
-            const { x, y } = position;
-            const mapWidth = 140;
-            const mapHeight = 100;
-
-            // Draw satellite-like background
-            ctx.fillStyle = '#2a4d3a';
-            ctx.fillRect(x, y, mapWidth, mapHeight);
-
-            // Draw terrain patterns
-            ctx.fillStyle = '#1a3d2a';
-            for (let i = 0; i < 8; i++) {
-                const rectX = x + (i * 20) + Math.random() * 10;
-                const rectY = y + Math.random() * mapHeight;
-                const rectW = 15 + Math.random() * 10;
-                const rectH = 8 + Math.random() * 8;
-                ctx.fillRect(rectX, rectY, rectW, rectH);
-            }
-
-            // Draw roads/paths
-            ctx.strokeStyle = '#6b7280';
-            ctx.lineWidth = 2;
-            ctx.beginPath();
-            ctx.moveTo(x, y + mapHeight * 0.3);
-            ctx.lineTo(x + mapWidth, y + mapHeight * 0.4);
-            ctx.moveTo(x + mapWidth * 0.6, y);
-            ctx.lineTo(x + mapWidth * 0.7, y + mapHeight);
-            ctx.stroke();
-
-            // Draw location marker
-            const markerX = x + (mapWidth / 2);
-            const markerY = y + (mapHeight / 2);
-
-            // Marker background
-            ctx.fillStyle = '#ffffff';
-            ctx.beginPath();
-            ctx.arc(markerX, markerY, 8, 0, 2 * Math.PI);
-            ctx.fill();
-
-            // Marker center
-            ctx.fillStyle = '#dc2626';
-            ctx.beginPath();
-            ctx.arc(markerX, markerY, 5, 0, 2 * Math.PI);
-            ctx.fill();
-
-            // Coordinates if available
-            if (currentLocation) {
-                ctx.fillStyle = 'white';
-                ctx.font = '10px Roboto, Arial';
-                const coordText = `${currentLocation.lat.toFixed(3)}, ${currentLocation.lng.toFixed(3)}`;
-                ctx.fillText(coordText, x + 4, y + 12);
-            }
-
-            // Draw border
-            ctx.strokeStyle = 'rgba(255,255,255,0.9)';
-            ctx.lineWidth = 2;
-            ctx.strokeRect(x, y, mapWidth, mapHeight);
-
-            // Google branding
-            ctx.fillStyle = 'rgba(0,0,0,0.8)';
-            ctx.fillRect(x + 4, y + mapHeight - 24, 60, 20);
-            ctx.fillStyle = 'white';
-            ctx.font = '12px Roboto, Arial';
-            ctx.fillText('Google', x + 8, y + mapHeight - 10);
+        // Switch Camera
+        async function switchCamera() {
+            triggerHaptics([30]);
+            currentFacingMode = currentFacingMode === 'environment' ? 'user' : 'environment';
+            await initCamera();
+            showToast(`Switched to ${currentFacingMode === 'environment' ? 'Rear' : 'Front'} lens`);
         }
 
-        // Save photo to device
-        function savePhotoToDevice(dataUrl, fileName) {
-            const link = document.createElement('a');
-            link.download = fileName;
-            link.href = dataUrl;
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-        }
-
-        // Upload existing photo
-        function uploadPhoto() {
-            const input = document.createElement('input');
-            input.type = 'file';
-            input.accept = 'image/*';
-
-            input.onchange = async e => {
-                const file = e.target.files[0];
-                if (file) {
-                    const reader = new FileReader();
-                    reader.onload = async event => {
-                        const img = new Image();
-                        img.onload = async () => {
-                            photoCanvas.width = img.width;
-                            photoCanvas.height = img.height;
-
-                            const ctx = photoCanvas.getContext('2d');
-                            ctx.drawImage(img, 0, 0);
-
-                            await addOverlayToCanvas(ctx);
-
-                            const imageData = photoCanvas.toDataURL('image/jpeg', 0.9);
-                            savePhotoToDevice(imageData, `OrthoCam_${new Date().getTime()}.jpg`);
-
-                            photoData.push({
-                                imageData: imageData,
-                                location: currentLocation,
-                                address: addressInfo,
-                                timestamp: new Date()
-                            });
-                        };
-                        img.src = event.target.result;
-                    };
-                    reader.readAsDataURL(file);
+        // Clinical Metadata Management
+        function setLaterality(lat) {
+            triggerHaptics([25]);
+            currentLaterality = lat;
+            latButtons.forEach(btn => {
+                btn.className = 'lat-btn';
+                if (btn.dataset.lat === lat) {
+                    if (lat === 'LEFT') btn.classList.add('active-left');
+                    else if (lat === 'RIGHT') btn.classList.add('active-right');
+                    else if (lat === 'BILATERAL') btn.classList.add('active-bilateral');
+                    else btn.classList.add('active-none');
                 }
-            };
+            });
 
-            input.click();
+            if (lat === 'NONE') {
+                liveLatBadge.style.display = 'none';
+            } else {
+                liveLatBadge.style.display = 'inline-block';
+                liveLatBadge.textContent = lat;
+                liveLatBadge.className = `live-lat-badge badge-${lat.toLowerCase()}`;
+            }
         }
 
-        // Initialize the app when DOM is loaded
-        document.addEventListener('DOMContentLoaded', initApp);
+        stageSelect.addEventListener('change', e => {
+            currentStage = e.target.value;
+            liveStageBadge.textContent = currentStage;
+            triggerHaptics([20]);
+        });
 
-        // Handle page visibility changes
-        document.addEventListener('visibilitychange', () => {
-            if (document.visibilityState === 'visible' && !currentLocation) {
-                // Retry location when page becomes visible
-                startLocationTracking();
+        caseTagInput.addEventListener('input', e => {
+            currentCaseId = e.target.value.trim();
+            if (currentCaseId) {
+                liveCaseBadge.style.display = 'inline-block';
+                liveCaseBadge.textContent = currentCaseId;
+            } else {
+                liveCaseBadge.style.display = 'none';
             }
         });
-    </script>
 
-    <!-- UPDATED cam.html: Adds video recording with overlays baked into video -->
+        latButtons.forEach(btn => {
+            btn.addEventListener('click', () => setLaterality(btn.dataset.lat));
+        });
 
-    <script>
-        let videoCanvas = document.createElement('canvas');
-        let videoCtx = videoCanvas.getContext('2d');
-        let recordingChunks = [];
-        let recorder = null;
-        let isRecording = false;
-        let currentMimeType = '';
+        // Overlay Collapse & Toggle
+        function toggleOverlayCollapse() {
+            triggerHaptics([25]);
+            isOverlayMinimized = !isOverlayMinimized;
+            geotagCard.classList.toggle('minimized', isOverlayMinimized);
+            collapseCardBtn.innerHTML = isOverlayMinimized ?
+                '<svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>' :
+                '<svg viewBox="0 0 24 24"><path d="M18 15l-6-6-6 6"/></svg>';
+        }
 
-        function startRecording() {
+        collapseCardBtn.addEventListener('click', e => {
+            e.stopPropagation();
+            toggleOverlayCollapse();
+        });
+
+        geotagCard.addEventListener('click', () => {
+            if (isOverlayMinimized) toggleOverlayCollapse();
+        });
+
+        overlayToggleBtn.addEventListener('click', () => {
+            const isHidden = geotagCard.style.display === 'none';
+            geotagCard.style.display = isHidden ? 'flex' : 'none';
+            clinicalHud.style.display = isHidden ? 'flex' : 'none';
+            overlayToggleBtn.classList.toggle('active', isHidden);
+            showToast(isHidden ? "Overlay visible" : "Overlay hidden (clean view)");
+        });
+
+        gridBtn.addEventListener('click', () => {
+            isGridActive = !isGridActive;
+            alignmentGrid.classList.toggle('active', isGridActive);
+            gridBtn.classList.toggle('active', isGridActive);
+            triggerHaptics([25]);
+        });
+
+        torchBtn.addEventListener('click', toggleTorch);
+        flipCameraBtn.addEventListener('click', switchCamera);
+
+        // Location Modal & Manual Facility Management
+        gpsStatusPill.addEventListener('click', () => {
+            customHospitalInput.value = manualHospitalName || '';
+            if (currentLocation) {
+                const isCached = isUsingCachedLocation ? " (Cached)" : " (Live GPS)";
+                cacheInfoBox.innerHTML = `
+                    <strong>Active Coordinates:</strong> ${currentLocation.lat.toFixed(5)}°, ${currentLocation.lng.toFixed(5)}°${isCached}<br>
+                    <strong>Geofence Radius:</strong> ${SIGNIFICANT_DISTANCE_METERS}m (Campus boundary)<br>
+                    <strong>Cached Address:</strong> ${addressInfo}
+                `;
+            } else {
+                cacheInfoBox.textContent = "No GPS lock or cache stored yet.";
+            }
+            locationModal.classList.add('open');
+        });
+
+        saveHospitalBtn.addEventListener('click', () => {
+            manualHospitalName = customHospitalInput.value.trim();
+            locationModal.classList.remove('open');
+            if (manualHospitalName) {
+                updateLocationStatus('Hospital Set', 'success');
+                showToast(`Facility set: ${manualHospitalName}`);
+            } else {
+                showToast("Reverted to automatic address");
+            }
+            if (currentLocation) {
+                saveLocationToCache(currentLocation.lat, currentLocation.lng, currentLocation.accuracy, addressInfo, manualHospitalName, staticMapImage);
+            }
+            updateLocationUI();
+        });
+
+        cancelHospitalBtn.addEventListener('click', () => {
+            locationModal.classList.remove('open');
+        });
+
+        forceRefreshGpsBtn.addEventListener('click', async () => {
+            showToast("Refreshing GPS coordinates and satellite map...", 3000);
+            locationModal.classList.remove('open');
+            updateLocationStatus('Refreshing GPS...', 'warning');
+
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(async pos => {
+                    const newLat = pos.coords.latitude;
+                    const newLng = pos.coords.longitude;
+                    const newAcc = Math.round(pos.coords.accuracy);
+
+                    currentLocation = { lat: newLat, lng: newLng, accuracy: newAcc, timestamp: new Date() };
+                    isUsingCachedLocation = false;
+                    await getAddressFromCoordinates(newLat, newLng);
+                    await loadStaticMapImage();
+                    saveLocationToCache(newLat, newLng, newAcc, addressInfo, manualHospitalName, staticMapImage);
+
+                    updateLocationStatus(`GPS Locked (±${newAcc}m)`, 'success');
+                    updateLocationUI();
+                    updateLiveMapPosition();
+                    showToast("Location & satellite map updated!");
+                }, err => {
+                    showToast("GPS refresh timed out. Keeping cached hospital data.");
+                }, { enableHighAccuracy: true, timeout: 12000, maximumAge: 0 });
+            }
+        });
+
+        // High-DPI Resolution-Independent Canvas Overlay Baking
+        async function drawBakedOverlayOnCanvas(ctx) {
+            const canvas = ctx.canvas;
+            const scale = Math.max(canvas.width / 1280, 0.65);
+
+            const pad = Math.round(20 * scale);
+            const mapW = Math.round(180 * scale);
+            const mapH = Math.round(135 * scale);
+            const boxRadius = Math.round(14 * scale);
+
+            const boxH = mapH + (pad * 1.5);
+            const boxW = canvas.width - (pad * 2);
+            const boxX = pad;
+            const boxY = canvas.height - boxH - pad;
+
+            ctx.save();
+            ctx.fillStyle = 'rgba(10, 14, 22, 0.84)';
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.16)';
+            ctx.lineWidth = Math.max(1, Math.round(1.5 * scale));
+
+            ctx.beginPath();
+            if (ctx.roundRect) {
+                ctx.roundRect(boxX, boxY, boxW, boxH, boxRadius);
+            } else {
+                ctx.rect(boxX, boxY, boxW, boxH);
+            }
+            ctx.fill();
+            ctx.stroke();
+
+            // Map thumbnail
+            const mapX = boxX + pad;
+            const mapY = boxY + Math.round((boxH - mapH) / 2);
+
+            if (staticMapImage) {
+                ctx.drawImage(staticMapImage, mapX, mapY, mapW, mapH);
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.35)';
+                ctx.lineWidth = 1;
+                ctx.strokeRect(mapX, mapY, mapW, mapH);
+            } else {
+                ctx.fillStyle = '#162e24';
+                ctx.fillRect(mapX, mapY, mapW, mapH);
+                ctx.strokeStyle = '#334155';
+                ctx.lineWidth = 2;
+                ctx.strokeRect(mapX, mapY, mapW, mapH);
+                ctx.fillStyle = '#EF4444';
+                ctx.beginPath();
+                ctx.arc(mapX + mapW / 2, mapY + mapH / 2, Math.round(6 * scale), 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            // Text Content
+            const textX = mapX + mapW + Math.round(16 * scale);
+            let textY = mapY + Math.round(4 * scale);
+            const maxTextWidth = (boxX + boxW) - textX - pad;
+
+            // Row 1: Badges
+            let badgeX = textX;
+            if (currentLaterality !== 'NONE') {
+                const latText = currentLaterality;
+                ctx.font = `bold ${Math.round(14 * scale)}px 'Inter', sans-serif`;
+                const latMetrics = ctx.measureText(latText);
+                const badgeW = latMetrics.width + (14 * scale);
+                const badgeH = Math.round(20 * scale);
+
+                ctx.fillStyle = currentLaterality === 'LEFT' ? '#2563EB' : (currentLaterality === 'RIGHT' ? '#D97706' : '#7C3AED');
+                ctx.fillRect(badgeX, textY, badgeW, badgeH);
+
+                ctx.fillStyle = '#FFFFFF';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(latText, badgeX + (7 * scale), textY + badgeH / 2);
+                badgeX += badgeW + (8 * scale);
+            }
+
+            // Stage Badge
+            const stageText = currentStage;
+            ctx.font = `600 ${Math.round(13 * scale)}px 'Inter', sans-serif`;
+            const stageMetrics = ctx.measureText(stageText);
+            const stageBadgeW = stageMetrics.width + (12 * scale);
+            const stageBadgeH = Math.round(20 * scale);
+
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.18)';
+            ctx.fillRect(badgeX, textY, stageBadgeW, stageBadgeH);
+            ctx.fillStyle = '#FFFFFF';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(stageText, badgeX + (6 * scale), textY + stageBadgeH / 2);
+            badgeX += stageBadgeW + (8 * scale);
+
+            // Case ID Badge
+            if (currentCaseId) {
+                const caseText = `#${currentCaseId}`;
+                ctx.font = `600 ${Math.round(13 * scale)}px 'JetBrains Mono', monospace`;
+                const caseMetrics = ctx.measureText(caseText);
+                const caseW = caseMetrics.width + (12 * scale);
+                const caseH = Math.round(20 * scale);
+
+                ctx.fillStyle = 'rgba(0, 229, 255, 0.18)';
+                ctx.fillRect(badgeX, textY, caseW, caseH);
+                ctx.fillStyle = '#00E5FF';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(caseText, badgeX + (6 * scale), textY + caseH / 2);
+            }
+
+            textY += Math.round(30 * scale);
+
+            // Row 2: Address
+            ctx.fillStyle = '#FFFFFF';
+            ctx.font = `bold ${Math.round(17 * scale)}px 'Inter', sans-serif`;
+            ctx.textBaseline = 'top';
+
+            const displayAddr = manualHospitalName || addressInfo;
+            let printAddr = displayAddr;
+            if (ctx.measureText(printAddr).width > maxTextWidth) {
+                while (printAddr.length > 10 && ctx.measureText(printAddr + '...').width > maxTextWidth) {
+                    printAddr = printAddr.substring(0, printAddr.length - 4);
+                }
+                printAddr += '...';
+            }
+            ctx.fillText(printAddr, textX, textY);
+            textY += Math.round(24 * scale);
+
+            // Row 3: Coordinates
+            ctx.fillStyle = '#00E5FF';
+            ctx.font = `500 ${Math.round(14 * scale)}px 'JetBrains Mono', monospace`;
+            const coordStr = currentLocation ?
+                `LAT ${currentLocation.lat.toFixed(5)}°  LONG ${currentLocation.lng.toFixed(5)}°  (±${currentLocation.accuracy}m)` :
+                `LAT --.-----°  LONG --.-----°`;
+            ctx.fillText(coordStr, textX, textY);
+            textY += Math.round(22 * scale);
+
+            // Row 4: Timestamp
+            ctx.fillStyle = '#94A3B8';
+            ctx.font = `500 ${Math.round(13.5 * scale)}px 'Inter', sans-serif`;
+            const now = new Date();
+            const timeStr = `${now.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}  ${now.toLocaleTimeString('en-GB', { hour12: false })} IST • OrthoCam Geotag`;
+            ctx.fillText(timeStr, textX, textY);
+
+            ctx.restore();
+        }
+
+        // Shutter Trigger & Photo Capture
+        async function capturePhoto() {
             if (!cameraStream) {
-                alert("Camera not available");
+                showToast("Camera not ready");
                 return;
             }
-            let options;
-            if (MediaRecorder.isTypeSupported('video/mp4; codecs="avc1.42E01E,mp4a.40.2"')) {
-                options = { mimeType: 'video/mp4; codecs="avc1.42E01E,mp4a.40.2"' };
-            } else if (MediaRecorder.isTypeSupported('video/mp4')) {
-                options = { mimeType: 'video/mp4' };
-            } else {
-                options = { mimeType: 'video/webm' };
-            }
 
-            currentMimeType = options.mimeType;
-            isRecording = true;
-            recordBtn.textContent = '⏹';
-            updateStatus('Recording started...', 'success');
+            triggerHaptics([40, 50, 40]);
+            playShutterSound();
 
-            videoCanvas.width = cameraView.videoWidth;
-            videoCanvas.height = cameraView.videoHeight;
+            shutterFlash.classList.add('flash');
+            setTimeout(() => shutterFlash.classList.remove('flash'), 200);
 
-            recordingChunks = [];
-            const stream = videoCanvas.captureStream(30);
-            recorder = new MediaRecorder(stream, options);
+            try {
+                photoCanvas.width = cameraView.videoWidth || 1920;
+                photoCanvas.height = cameraView.videoHeight || 1080;
 
-            recorder.ondataavailable = e => recordingChunks.push(e.data);
-            recorder.onstop = saveRecordedVideo;
+                const ctx = photoCanvas.getContext('2d');
+                ctx.drawImage(cameraView, 0, 0, photoCanvas.width, photoCanvas.height);
 
-            recorder.start();
+                await drawBakedOverlayOnCanvas(ctx);
 
-            drawFrameLoop();
-        }
+                const dateTag = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+                const fileName = `OrthoCam_${currentLaterality}_${dateTag}.jpg`;
+                const dataUrl = photoCanvas.toDataURL('image/jpeg', 0.92);
 
-        async function drawFrameLoop() {
-            while (isRecording) {
-                videoCtx.drawImage(cameraView, 0, 0, videoCanvas.width, videoCanvas.height);
-                await addOverlayToCanvas(videoCtx); // ensure overlay completes
-                await new Promise(resolve => setTimeout(resolve, 33)); // ~30 FPS
-            }
-        }
+                lastCapturedImageData = {
+                    dataUrl,
+                    fileName,
+                    timestamp: new Date()
+                };
 
-        function stopRecording() {
-            isRecording = false;
-            recordBtn.textContent = '🎥';
-            updateStatus('Recording stopped', 'warning');
-            if (recorder && recorder.state !== 'inactive') {
-                recorder.stop();
+                galleryThumbImg.src = dataUrl;
+                galleryThumbImg.style.display = 'block';
+                galleryBtn.querySelector('svg').style.display = 'none';
+
+                downloadDataUrl(dataUrl, fileName);
+                showToast("Clinical photo saved with geotag");
+
+            } catch (err) {
+                console.error("Photo capture failed:", err);
+                showToast("Error processing photo capture");
             }
         }
 
-        function saveRecordedVideo() {
-            const blob = new Blob(recordingChunks, { type: currentMimeType });
-            const url = URL.createObjectURL(blob);
+        function downloadDataUrl(url, fileName) {
             const a = document.createElement('a');
             a.href = url;
-            a.download = `OrthoCam_` + Date.now() + (currentMimeType.includes('mp4') ? '.mp4' : '.webm');
+            a.download = fileName;
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
         }
-        // Add these variables at the top with other declarations
-        let staticMapImage = null;
-        let overlayTextData = null;
 
-        // Replace the existing drawMapThumbnail function
-        async function drawMapThumbnail(ctx, canvas, position) {
-            const { x, y } = position;
-            const mapWidth = 140;
-            const mapHeight = 100;
+        // Mode Switching
+        tabPhoto.addEventListener('click', () => setMode('photo'));
+        tabVideo.addEventListener('click', () => setMode('video'));
 
-            if (staticMapImage) {
-                // Use cached static map image
-                ctx.drawImage(staticMapImage, x, y, mapWidth, mapHeight);
-
-                // Draw border
-                ctx.strokeStyle = 'rgba(255,255,255,0.9)';
-                ctx.lineWidth = 2;
-                ctx.strokeRect(x, y, mapWidth, mapHeight);
-            } else {
-                // Fallback if no static map loaded
-                drawMapFallback(ctx, canvas, position);
-            }
+        function setMode(mode) {
+            if (isRecording) return;
+            currentMode = mode;
+            triggerHaptics([25]);
+            tabPhoto.classList.toggle('active', mode === 'photo');
+            tabVideo.classList.toggle('active', mode === 'video');
+            shutterTrigger.classList.toggle('mode-video', mode === 'video');
         }
 
-        // Add this new function to load static map once
-        async function loadStaticMapImage() {
-            if (!currentLocation) return;
+        shutterTrigger.addEventListener('click', () => {
+            if (currentMode === 'photo') {
+                capturePhoto();
+            } else {
+                if (!isRecording) startVideoRecording();
+                else stopVideoRecording();
+            }
+        });
 
+        // Video Recording
+        async function startVideoRecording() {
+            if (!cameraStream) return;
+            triggerHaptics([60]);
+
+            videoCanvas.width = cameraView.videoWidth || 1920;
+            videoCanvas.height = cameraView.videoHeight || 1080;
+
+            recordedChunks = [];
+            let options = { mimeType: 'video/webm' };
+            if (MediaRecorder.isTypeSupported('video/mp4; codecs="avc1.42E01E,mp4a.40.2"')) {
+                options = { mimeType: 'video/mp4; codecs="avc1.42E01E,mp4a.40.2"' };
+            } else if (MediaRecorder.isTypeSupported('video/mp4')) {
+                options = { mimeType: 'video/mp4' };
+            }
+
+            recordingMimeType = options.mimeType;
+
+            let audioStream = null;
             try {
-                const zoom = 17;
-                const mapWidth = 140;
-                const mapHeight = 100;
-                const staticMapUrl = `https://maps.googleapis.com/maps/api/staticmap?` +
-                    `center=${currentLocation.lat},${currentLocation.lng}&` +
-                    `zoom=${zoom}&` +
-                    `size=${mapWidth}x${mapHeight}&` +
-                    `maptype=satellite&` +
-                    `markers=color:red%7Csize:mid%7C${currentLocation.lat},${currentLocation.lng}&` +
-                    `scale=2&` +
-                    `key=${GOOGLE_MAPS_API_KEY}`;
+                audioStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            } catch (e) {
+                console.warn("Audio recording skipped:", e);
+            }
 
-                staticMapImage = new Image();
-                staticMapImage.crossOrigin = 'anonymous';
+            const canvasStream = videoCanvas.captureStream(30);
+            const combinedStream = new MediaStream();
+            canvasStream.getVideoTracks().forEach(t => combinedStream.addTrack(t));
+            if (audioStream) {
+                audioStream.getAudioTracks().forEach(t => combinedStream.addTrack(t));
+            }
 
-                await new Promise((resolve, reject) => {
-                    staticMapImage.onload = resolve;
-                    staticMapImage.onerror = reject;
-                    staticMapImage.src = staticMapUrl;
-                });
-            } catch (error) {
-                console.error("Error loading static map:", error);
-                staticMapImage = null;
+            mediaRecorder = new MediaRecorder(combinedStream, options);
+            mediaRecorder.ondataavailable = e => {
+                if (e.data.size > 0) recordedChunks.push(e.data);
+            };
+
+            mediaRecorder.onstop = saveRecordedVideo;
+
+            isRecording = true;
+            shutterTrigger.classList.add('recording');
+            videoTimer.style.display = 'flex';
+            recordingStartTime = Date.now();
+
+            videoTimerInterval = setInterval(() => {
+                const elapsedSec = Math.floor((Date.now() - recordingStartTime) / 1000);
+                const mins = String(Math.floor(elapsedSec / 60)).padStart(2, '0');
+                const secs = String(elapsedSec % 60).padStart(2, '0');
+                videoTimerText.textContent = `${mins}:${secs}`;
+            }, 500);
+
+            mediaRecorder.start();
+            drawVideoFrameLoop();
+            showToast("Video recording started");
+        }
+
+        async function drawVideoFrameLoop() {
+            while (isRecording) {
+                videoCtx.drawImage(cameraView, 0, 0, videoCanvas.width, videoCanvas.height);
+                await drawBakedOverlayOnCanvas(videoCtx);
+                await new Promise(r => setTimeout(r, 33));
             }
         }
 
-        // Add this function to cache overlay text data
-        function cacheOverlayTextData() {
-            if (!currentLocation) return;
+        function stopVideoRecording() {
+            triggerHaptics([40, 50]);
+            isRecording = false;
+            shutterTrigger.classList.remove('recording');
+            videoTimer.style.display = 'none';
+            clearInterval(videoTimerInterval);
 
-            const dateStr = currentLocation.timestamp.toLocaleString('en-GB', {
-                day: '2-digit',
-                month: '2-digit',
-                year: 'numeric',
-                hour: '2-digit',
-                minute: '2-digit',
-                hour12: true,
-                timeZoneName: 'short'
-            });
-
-            overlayTextData = {
-                address: addressInfo,
-                coordinates: `Lat ${currentLocation.lat.toFixed(6)}° Long ${currentLocation.lng.toFixed(6)}°`,
-                timestamp: dateStr
-            };
-        }
-
-        // Update the handleLocationSuccess function to load static map
-        async function handleLocationSuccess(position) {
-            currentLocation = {
-                lat: position.coords.latitude,
-                lng: position.coords.longitude,
-                accuracy: position.coords.accuracy,
-                timestamp: new Date(position.timestamp)
-            };
-
-            updateStatus('Location found', 'success');
-            locationStatus = 'success';
-
-            await getAddressFromCoordinates(currentLocation.lat, currentLocation.lng);
-
-            // Load static map and cache text data
-            await loadStaticMapImage();
-            cacheOverlayTextData();
-
-            updateLocationOverlay();
-            updateMap();
-            // Enable buttons once location is retrieved
-            controls.style.display = "flex";
-        }
-
-        // Update addOverlayToCanvas to use cached data
-        async function addOverlayToCanvas(ctx) {
-            const canvas = ctx.canvas;
-
-            // Calculate overlay dimensions
-            const overlayHeight = 100;
-            const mapWidth = 160;
-            const mapHeight = 120;
-            const mapPosition = { x: 16, y: canvas.height - overlayHeight - 16 };
-            const overlayPosition = { x: mapWidth + 32, y: canvas.height - overlayHeight - 16 };
-            const overlayWidth = canvas.width - mapWidth - 48;
-
-            // Draw map thumbnail (now uses cached static image)
-            await drawMapThumbnail(ctx, canvas, mapPosition);
-
-            // Draw overlay background
-            ctx.fillStyle = 'rgba(0, 0, 0, 0.60)';
-            ctx.fillRect(overlayPosition.x, overlayPosition.y, overlayWidth, overlayHeight);
-
-            // Draw text content using cached data
-            ctx.fillStyle = 'white';
-            ctx.textBaseline = 'top';
-
-            let y = overlayPosition.y + 16;
-            const lineHeight = 24;
-
-            if (overlayTextData) {
-                // Address detail
-                ctx.font = '20px Roboto, Arial';
-                ctx.fillStyle = '#e0e0e0';
-                ctx.fillText(overlayTextData.address, overlayPosition.x + 16, y);
-                y += lineHeight - 4;
-
-                // Coordinates
-                ctx.font = '14px Roboto, Arial';
-                ctx.fillStyle = '#b0b0b0';
-                ctx.fillText(overlayTextData.coordinates, overlayPosition.x + 16, y);
-                y += lineHeight;
-
-                // Timestamp
-                ctx.font = '18px Roboto, Arial';
-                ctx.fillStyle = '#e0e0e0';
-                ctx.fillText(overlayTextData.timestamp, overlayPosition.x + 16, y);
-            } else {
-                // Fallback text
-                ctx.font = '18px Roboto, Arial';
-                ctx.fillStyle = '#e0e0e0';
-                ctx.fillText('Getting location...', overlayPosition.x + 16, y);
+            if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+                mediaRecorder.stop();
             }
+            showToast("Video recording stopped");
         }
+
+        function saveRecordedVideo() {
+            const blob = new Blob(recordedChunks, { type: recordingMimeType });
+            const ext = recordingMimeType.includes('mp4') ? 'mp4' : 'webm';
+            const fileName = `OrthoCam_Video_${new Date().toISOString().slice(0, 19).replace(/[:.]/g, '-')}.${ext}`;
+            const url = URL.createObjectURL(blob);
+            downloadDataUrl(url, fileName);
+        }
+
+        // Upload Existing
+        uploadBtn.addEventListener('click', () => {
+            triggerHaptics([25]);
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = 'image/*';
+            input.onchange = async e => {
+                const file = e.target.files[0];
+                if (!file) return;
+
+                const reader = new FileReader();
+                reader.onload = evt => {
+                    const img = new Image();
+                    img.onload = async () => {
+                        photoCanvas.width = img.width;
+                        photoCanvas.height = img.height;
+                        const ctx = photoCanvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0);
+
+                        await drawBakedOverlayOnCanvas(ctx);
+
+                        const dataUrl = photoCanvas.toDataURL('image/jpeg', 0.92);
+                        const fileName = `OrthoCam_Import_${Date.now()}.jpg`;
+
+                        lastCapturedImageData = { dataUrl, fileName, timestamp: new Date() };
+                        galleryThumbImg.src = dataUrl;
+                        galleryThumbImg.style.display = 'block';
+                        galleryBtn.querySelector('svg').style.display = 'none';
+
+                        downloadDataUrl(dataUrl, fileName);
+                        showToast("Imported photo stamped with geotag");
+                    };
+                    img.src = evt.target.result;
+                };
+                reader.readAsDataURL(file);
+            };
+            input.click();
+        });
+
+        // Gallery Modal
+        galleryBtn.addEventListener('click', () => {
+            if (!lastCapturedImageData) {
+                showToast("No photos captured in this session yet");
+                return;
+            }
+            triggerHaptics([25]);
+            reviewImage.src = lastCapturedImageData.dataUrl;
+            reviewModal.classList.add('open');
+        });
+
+        modalCloseBtn.addEventListener('click', () => {
+            reviewModal.classList.remove('open');
+        });
+
+        modalDownloadBtn.addEventListener('click', () => {
+            if (lastCapturedImageData) {
+                downloadDataUrl(lastCapturedImageData.dataUrl, lastCapturedImageData.fileName);
+                showToast("Saved to device");
+            }
+        });
+
+        modalShareBtn.addEventListener('click', async () => {
+            if (!lastCapturedImageData) return;
+            try {
+                if (navigator.share) {
+                    const blob = await (await fetch(lastCapturedImageData.dataUrl)).blob();
+                    const file = new File([blob], lastCapturedImageData.fileName, { type: 'image/jpeg' });
+                    await navigator.share({
+                        title: 'OrthoCam Clinical Capture',
+                        text: `Clinical Image • ${currentLaterality} • ${currentStage}`,
+                        files: [file]
+                    });
+                } else {
+                    showToast("Web Share not supported on this browser");
+                }
+            } catch (err) {
+                console.warn("Share notice:", err);
+            }
+        });
+
+        // App Initialization
+        async function initApp() {
+            // 1. Instant Boot: Load Cached Hospital Location & Satellite Map
+            loadCachedLocation();
+
+            // 2. Start Camera
+            await initCamera();
+
+            // 3. Background Verification of GPS (with 150m significant motion threshold)
+            startLocationTracking();
+
+            // 4. Load Google Maps Interactive API
+            initGoogleMapsAPI();
+        }
+
+        document.addEventListener('DOMContentLoaded', initApp);
+
+        document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'visible') {
+                startLocationTracking();
+            }
+        });
     </script>
-
-
 </body>
 
 </html>
