@@ -81,6 +81,13 @@ document.addEventListener('DOMContentLoaded', () => {
     const backupCloseIconBtn = document.getElementById('backup-close-icon-btn');
     const backupDoneBtn = document.getElementById('backup-done-btn');
 
+    // Pinch-to-Resize Controls & Stage HUD Elements
+    const gridContainer = document.querySelector('.grid-container');
+    const pinchHud = document.getElementById('pinch-hud');
+    const pinchHudValue = document.getElementById('pinch-hud-value');
+    const currentPadSizeLabel = document.getElementById('current-pad-size-label');
+    const resetPadSizeBtn = document.getElementById('reset-pad-size-btn');
+
     // ==========================================================================
     // State
     // ==========================================================================
@@ -94,6 +101,28 @@ document.addEventListener('DOMContentLoaded', () => {
     let activePatchId = null;
     let isReorderMode = false;
     let searchQuery = '';
+
+    // Dynamic Pad Sizing & Multi-Touch Pinch State
+    const STORAGE_KEY_PAD_SCALE = 'midi_pad_scale';
+    const MIN_PAD_SCALE = 0.6;
+    const MAX_PAD_SCALE = 2.2;
+    const DEFAULT_PAD_SCALE = 1.0;
+
+    let currentPadScale = DEFAULT_PAD_SCALE;
+    let isPinching = false;
+    let initialPinchDistance = 0;
+    let initialPinchScale = 1.0;
+    let touchId1 = null;
+    let touchId2 = null;
+    let lastPinchEndTime = 0;
+    let pinchHudTimer = null;
+    let wheelSaveTimer = null;
+    const activePadTimers = new Set();
+
+    function cancelAllPadTimers() {
+        activePadTimers.forEach(timer => clearTimeout(timer));
+        activePadTimers.clear();
+    }
 
     // Standard stage palette for quick color selection
     const STAGE_COLORS = [
@@ -576,7 +605,14 @@ document.addEventListener('DOMContentLoaded', () => {
             let touchStartY = 0;
 
             pad.addEventListener('touchstart', (e) => {
-                if (isReorderMode) return;
+                if (isReorderMode || isPinching || e.touches.length > 1 || Date.now() - lastPinchEndTime < 500) {
+                    if (touchTimer) {
+                        clearTimeout(touchTimer);
+                        activePadTimers.delete(touchTimer);
+                        touchTimer = null;
+                    }
+                    return;
+                }
                 isLongPressTriggered = false;
                 if (e.touches && e.touches.length > 0) {
                     touchStartX = e.touches[0].clientX;
@@ -585,18 +621,30 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 touchTimer = setTimeout(() => {
                     isLongPressTriggered = true;
+                    activePadTimers.delete(touchTimer);
+                    touchTimer = null;
                     if (navigator.vibrate) navigator.vibrate(45);
                     openQuickEditModal(patch);
                 }, 450); // Snappy 450ms long-press threshold
+                activePadTimers.add(touchTimer);
             }, { passive: true });
 
             pad.addEventListener('touchmove', (e) => {
+                if (isPinching || e.touches.length > 1) {
+                    if (touchTimer) {
+                        clearTimeout(touchTimer);
+                        activePadTimers.delete(touchTimer);
+                        touchTimer = null;
+                    }
+                    return;
+                }
                 if (touchTimer && e.touches && e.touches.length > 0) {
                     const dx = e.touches[0].clientX - touchStartX;
                     const dy = e.touches[0].clientY - touchStartY;
                     // If user moves finger > 10px, they are scrolling; cancel long press
                     if (Math.hypot(dx, dy) > 10) {
                         clearTimeout(touchTimer);
+                        activePadTimers.delete(touchTimer);
                         touchTimer = null;
                     }
                 }
@@ -605,9 +653,10 @@ document.addEventListener('DOMContentLoaded', () => {
             pad.addEventListener('touchend', (e) => {
                 if (touchTimer) {
                     clearTimeout(touchTimer);
+                    activePadTimers.delete(touchTimer);
                     touchTimer = null;
                 }
-                if (isLongPressTriggered) {
+                if (isLongPressTriggered || isPinching || Date.now() - lastPinchEndTime < 500) {
                     // Suppress synthetic click that would otherwise trigger MIDI or close modal
                     e.preventDefault();
                 }
@@ -616,14 +665,18 @@ document.addEventListener('DOMContentLoaded', () => {
             pad.addEventListener('touchcancel', () => {
                 if (touchTimer) {
                     clearTimeout(touchTimer);
+                    activePadTimers.delete(touchTimer);
                     touchTimer = null;
                 }
             });
 
-            // Click Handler -> Trigger MIDI (ignored if long press just fired)
+            // Click Handler -> Trigger MIDI (ignored if long press just fired or pinch just ended)
             pad.onclick = () => {
                 if (isLongPressTriggered) {
                     isLongPressTriggered = false;
+                    return;
+                }
+                if (isPinching || Date.now() - lastPinchEndTime < 500) {
                     return;
                 }
                 sendMidiMessages(patch);
@@ -1248,6 +1301,8 @@ document.addEventListener('DOMContentLoaded', () => {
             ];
             activeSetlistId = 'xps10';
             activePatchId = null;
+            currentPadScale = DEFAULT_PAD_SCALE;
+            applyPadScale(DEFAULT_PAD_SCALE, true);
             saveData();
             renderSetlistTabs();
             renderButtons();
@@ -1319,6 +1374,178 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         } catch (err) {
             console.error("Error toggling fullscreen:", err);
+        }
+    }
+
+    // ==========================================================================
+    // 10b. Dynamic Pinch-to-Resize Engine (Mobile & Trackpad)
+    // ==========================================================================
+    function applyPadScale(scale, saveToStorage = false) {
+        document.documentElement.style.setProperty('--pad-scale', scale);
+        const percent = Math.round(scale * 100);
+        if (currentPadSizeLabel) {
+            currentPadSizeLabel.textContent = `${percent}%`;
+        }
+        if (saveToStorage) {
+            savePadScale(scale);
+        }
+    }
+
+    function savePadScale(scale) {
+        try {
+            localStorage.setItem(STORAGE_KEY_PAD_SCALE, scale.toFixed(2));
+        } catch (e) {
+            console.warn("Unable to save pad scale to localStorage:", e);
+        }
+    }
+
+    function loadSavedPadScale() {
+        try {
+            const saved = localStorage.getItem(STORAGE_KEY_PAD_SCALE);
+            if (saved) {
+                const parsed = parseFloat(saved);
+                if (!isNaN(parsed) && parsed >= MIN_PAD_SCALE && parsed <= MAX_PAD_SCALE) {
+                    return parsed;
+                }
+            }
+        } catch (e) {
+            console.warn("Unable to read pad scale from localStorage:", e);
+        }
+        return DEFAULT_PAD_SCALE;
+    }
+
+    function showPinchHud(scale) {
+        if (!pinchHud || !pinchHudValue) return;
+        if (pinchHudTimer) {
+            clearTimeout(pinchHudTimer);
+            pinchHudTimer = null;
+        }
+        pinchHudValue.textContent = `${Math.round(scale * 100)}%`;
+        pinchHud.classList.add('visible');
+    }
+
+    function hidePinchHud(delay = 800) {
+        if (!pinchHud) return;
+        if (pinchHudTimer) {
+            clearTimeout(pinchHudTimer);
+        }
+        pinchHudTimer = setTimeout(() => {
+            pinchHud.classList.remove('visible');
+            pinchHudTimer = null;
+        }, delay);
+    }
+
+    function initPinchToResize() {
+        // Load & immediately apply saved pad scale across sessions
+        currentPadScale = loadSavedPadScale();
+        applyPadScale(currentPadScale, false);
+
+        // 1. Mobile & Tablet Touch Listeners (2-finger pinch)
+        window.addEventListener('touchstart', (e) => {
+            // Do not pinch if a modal dialog is open or user is interacting with text inputs
+            if (document.querySelector('dialog[open]')) return;
+            if (e.target && ['INPUT', 'SELECT', 'TEXTAREA'].includes(e.target.tagName)) return;
+
+            if (e.touches.length === 2) {
+                // Instantly cancel any ongoing long-press quick-edit timers across all pads
+                cancelAllPadTimers();
+                isPinching = true;
+                touchId1 = e.touches[0].identifier;
+                touchId2 = e.touches[1].identifier;
+                initialPinchDistance = Math.hypot(
+                    e.touches[0].clientX - e.touches[1].clientX,
+                    e.touches[0].clientY - e.touches[1].clientY
+                );
+                initialPinchScale = currentPadScale;
+                showPinchHud(currentPadScale);
+            }
+        }, { passive: true });
+
+        window.addEventListener('touchmove', (e) => {
+            if (!isPinching) return;
+
+            const t1 = Array.from(e.touches).find(t => t.identifier === touchId1);
+            const t2 = Array.from(e.touches).find(t => t.identifier === touchId2);
+            if (!t1 || !t2) return;
+
+            // Prevent browser pinch-zooming the entire document while pinching pads
+            e.preventDefault();
+
+            const currentDist = Math.hypot(t1.clientX - t2.clientX, t1.clientY - t2.clientY);
+            if (initialPinchDistance > 10) {
+                const ratio = currentDist / initialPinchDistance;
+                const newScale = Math.min(Math.max(initialPinchScale * ratio, MIN_PAD_SCALE), MAX_PAD_SCALE);
+                currentPadScale = Math.round(newScale * 100) / 100;
+                applyPadScale(currentPadScale, false);
+                showPinchHud(currentPadScale);
+            }
+        }, { passive: false });
+
+        const handleTouchEnd = (e) => {
+            if (!isPinching) return;
+
+            const t1 = Array.from(e.touches).find(t => t.identifier === touchId1);
+            const t2 = Array.from(e.touches).find(t => t.identifier === touchId2);
+
+            // If either of the 2 pinching fingers was lifted, finish the pinch gesture
+            if (!t1 || !t2) {
+                isPinching = false;
+                touchId1 = null;
+                touchId2 = null;
+                lastPinchEndTime = Date.now();
+                savePadScale(currentPadScale);
+                hidePinchHud(800);
+            }
+        };
+
+        window.addEventListener('touchend', handleTouchEnd, { passive: true });
+        window.addEventListener('touchcancel', handleTouchEnd, { passive: true });
+
+        // 2. Safari iOS proprietary gesture listeners to prevent full-page viewport zoom
+        if (gridContainer) {
+            gridContainer.addEventListener('gesturestart', (e) => {
+                if (document.querySelector('dialog[open]')) return;
+                e.preventDefault();
+            }, { passive: false });
+
+            gridContainer.addEventListener('gesturechange', (e) => {
+                if (document.querySelector('dialog[open]')) return;
+                e.preventDefault();
+            }, { passive: false });
+
+            gridContainer.addEventListener('gestureend', (e) => {
+                if (document.querySelector('dialog[open]')) return;
+                e.preventDefault();
+            }, { passive: false });
+
+            // 3. Desktop Trackpad Pinch Support (Wheel with ctrlKey)
+            gridContainer.addEventListener('wheel', (e) => {
+                if (e.ctrlKey) {
+                    if (document.querySelector('dialog[open]')) return;
+                    e.preventDefault();
+                    const zoomFactor = 1 - e.deltaY * 0.005;
+                    const newScale = Math.min(Math.max(currentPadScale * zoomFactor, MIN_PAD_SCALE), MAX_PAD_SCALE);
+                    currentPadScale = Math.round(newScale * 100) / 100;
+                    applyPadScale(currentPadScale, false);
+                    showPinchHud(currentPadScale);
+
+                    clearTimeout(wheelSaveTimer);
+                    wheelSaveTimer = setTimeout(() => {
+                        savePadScale(currentPadScale);
+                        hidePinchHud(800);
+                    }, 400);
+                }
+            }, { passive: false });
+        }
+
+        // 4. Reset Button in Backup Modal
+        if (resetPadSizeBtn) {
+            resetPadSizeBtn.addEventListener('click', () => {
+                currentPadScale = DEFAULT_PAD_SCALE;
+                applyPadScale(DEFAULT_PAD_SCALE, true);
+                showPinchHud(DEFAULT_PAD_SCALE);
+                hidePinchHud(1000);
+            });
         }
     }
 
@@ -1496,7 +1723,12 @@ document.addEventListener('DOMContentLoaded', () => {
     setlistDoneBtn.addEventListener('click', () => closeModal(setlistDialog));
     setlistCloseIconBtn.addEventListener('click', () => closeModal(setlistDialog));
 
-    backupMenuBtn.addEventListener('click', () => openModal(backupDialog));
+    backupMenuBtn.addEventListener('click', () => {
+        if (currentPadSizeLabel) {
+            currentPadSizeLabel.textContent = `${Math.round(currentPadScale * 100)}%`;
+        }
+        openModal(backupDialog);
+    });
     exportActiveBtn.addEventListener('click', exportActiveSetlist);
     exportAllBtn.addEventListener('click', exportAllSetlists);
     importTriggerBtn.addEventListener('click', () => fileInput.click());
@@ -1529,6 +1761,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // 14. Initial Boot
     // ==========================================================================
     initQuickColorPresets();
+    initPinchToResize();
     loadData();
     initMidi();
 

@@ -35,6 +35,15 @@
     --radius-sm: 6px;
     --radius-md: 10px;
     --radius-lg: 14px;
+
+    /* Dynamic Patch Pad Sizing Variables (Adjusted via Pinch Gesture) */
+    --pad-scale: 1;
+    --pad-min-width-base: 180px;
+    --pad-min-height-base: 110px;
+    --pad-padding-base: 12px;
+    --pad-name-size-base: 1.15rem;
+    --pad-meta-size-base: 0.68rem;
+    --pad-gap-base: 16px;
 }
 
 /* Reset & Box Sizing */
@@ -516,9 +525,10 @@ body {
 
 .grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-    gap: 16px;
+    grid-template-columns: repeat(auto-fill, minmax(calc(var(--pad-min-width-base) * var(--pad-scale)), 1fr));
+    gap: calc(var(--pad-gap-base) * clamp(0.7, var(--pad-scale), 1.3));
     width: 100%;
+    touch-action: pan-y;
 }
 
 /* Patch Pad Button */
@@ -527,15 +537,15 @@ body {
     display: flex;
     flex-direction: column;
     justify-content: space-between;
-    min-height: 110px;
+    min-height: calc(var(--pad-min-height-base) * var(--pad-scale));
     border-radius: var(--radius-md);
     border: 1px solid rgba(255, 255, 255, 0.15);
-    padding: 12px;
+    padding: calc(var(--pad-padding-base) * clamp(0.7, var(--pad-scale), 1.3));
     cursor: pointer;
     box-shadow: var(--shadow-pad);
     transition: transform 0.1s ease, box-shadow 0.15s ease, filter 0.15s ease;
     overflow: hidden;
-    touch-action: manipulation;
+    touch-action: pan-y;
 }
 
 .patch-pad::before {
@@ -607,8 +617,8 @@ body {
     background: rgba(0, 0, 0, 0.45);
     border: 1px solid rgba(255, 255, 255, 0.2);
     color: rgba(255, 255, 255, 0.85);
-    width: 28px;
-    height: 28px;
+    width: clamp(22px, calc(28px * var(--pad-scale)), 38px);
+    height: clamp(22px, calc(28px * var(--pad-scale)), 38px);
     border-radius: 6px;
     display: flex;
     align-items: center;
@@ -637,11 +647,11 @@ body {
 .pad-name {
     position: relative;
     z-index: 2;
-    font-size: 1.15rem;
+    font-size: clamp(0.75rem, calc(var(--pad-name-size-base) * var(--pad-scale)), 2rem);
     font-weight: 700;
     line-height: 1.25;
     letter-spacing: -0.01em;
-    margin: 8px 0;
+    margin: calc(8px * clamp(0.6, var(--pad-scale), 1.4)) 0;
     word-break: break-word;
     text-shadow: 0 1px 3px rgba(0, 0, 0, 0.7);
 }
@@ -652,17 +662,17 @@ body {
     z-index: 2;
     display: flex;
     flex-wrap: wrap;
-    gap: 5px;
+    gap: calc(5px * clamp(0.6, var(--pad-scale), 1.4));
     margin-top: auto;
 }
 
 .meta-chip {
     font-family: var(--font-mono);
-    font-size: 0.68rem;
+    font-size: clamp(0.55rem, calc(var(--pad-meta-size-base) * var(--pad-scale)), 1rem);
     font-weight: 600;
     background: rgba(0, 0, 0, 0.55);
     color: rgba(255, 255, 255, 0.9);
-    padding: 2px 6px;
+    padding: calc(2px * clamp(0.6, var(--pad-scale), 1.3)) calc(6px * clamp(0.6, var(--pad-scale), 1.3));
     border-radius: 4px;
     border: 1px solid rgba(255, 255, 255, 0.15);
     backdrop-filter: blur(4px);
@@ -1042,6 +1052,15 @@ body {
    Responsive Adaptations (Mobile & Tablet)
    ========================================================================== */
 @media (max-width: 768px) {
+    :root {
+        --pad-min-width-base: 140px;
+        --pad-min-height-base: 95px;
+        --pad-padding-base: 10px;
+        --pad-name-size-base: 1rem;
+        --pad-meta-size-base: 0.62rem;
+        --pad-gap-base: 10px;
+    }
+
     .hardware-deck {
         padding: 10px 14px;
     }
@@ -1059,20 +1078,6 @@ body {
         min-width: 100%;
     }
     
-    .grid {
-        grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-        gap: 10px;
-    }
-    
-    .patch-pad {
-        min-height: 95px;
-        padding: 10px;
-    }
-    
-    .pad-name {
-        font-size: 1rem;
-    }
-    
     .live-status-bar .keyboard-hints {
         display: none;
     }
@@ -1084,4 +1089,57 @@ body {
     .form-group.span-2 {
         grid-column: span 1;
     }
+}
+
+/* ==========================================================================
+   Pinch-to-Resize Stage HUD Indicator
+   ========================================================================== */
+.pinch-hud {
+    position: fixed;
+    bottom: 30px;
+    left: 50%;
+    transform: translateX(-50%) translateY(20px) scale(0.95);
+    background: rgba(14, 18, 25, 0.94);
+    border: 1px solid var(--border-glow);
+    box-shadow: 0 10px 35px rgba(0, 0, 0, 0.75), 0 0 20px var(--color-accent-glow);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    color: var(--text-primary);
+    padding: 10px 20px;
+    border-radius: 30px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-family: var(--font-mono);
+    font-size: 0.88rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    z-index: 9999;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s ease, transform 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.pinch-hud.visible {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0) scale(1);
+}
+
+.pinch-hud svg {
+    color: var(--color-accent);
+    flex-shrink: 0;
+}
+
+.pinch-hud .hud-label {
+    color: var(--text-secondary);
+    font-size: 0.75rem;
+    text-transform: uppercase;
+}
+
+.pinch-hud .hud-value {
+    color: var(--color-accent);
+    font-weight: 800;
+    font-size: 1.05rem;
+    min-width: 52px;
+    text-shadow: 0 0 10px var(--color-accent-glow);
 }
