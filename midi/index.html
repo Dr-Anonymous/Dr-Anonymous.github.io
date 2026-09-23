@@ -33,7 +33,6 @@
                 </div>
                 <div class="brand-text">
                     <h1>MIDI PATCH CONTROLLER</h1>
-                    <span class="sub-label">STAGE COMMAND &bull; WEB MIDI</span>
                 </div>
             </div>
 
@@ -66,7 +65,7 @@
                     <span>PANIC</span>
                 </button>
 
-                <button id="wake-btn" class="deck-btn wake-btn" title="Keep Screen Awake (Stage Mode)" aria-label="Toggle Screen Wake Lock">
+                <button id="wake-btn" class="deck-btn wake-btn" title="Keep Screen Awake (Stage Mode)" aria-label="Toggle Screen Wake Lock" aria-pressed="false">
                     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <circle cx="12" cy="12" r="5"></circle>
                         <line x1="12" y1="1" x2="12" y2="3"></line>
@@ -300,7 +299,19 @@
 
                 <div class="backup-card">
                     <h3>Pad Display Size</h3>
-                    <p>Current size: <strong id="current-pad-size-label" style="color: var(--color-accent);">100%</strong>. Pinch with 2 fingers anytime on the pads to adjust.</p>
+                    <p>Current size: <strong id="current-pad-size-label" style="color: var(--color-accent);">100%</strong>. Pinch with 2 fingers or use Ctrl+Scroll on pads to resize (30% &ndash; 250%).</p>
+                    <div class="pad-size-slider-wrap">
+                        <span class="slider-bound">30%</span>
+                        <input type="range" id="pad-size-slider" min="30" max="250" step="5" value="100" aria-label="Pad Display Size Slider">
+                        <span class="slider-bound">250%</span>
+                    </div>
+                    <div class="btn-group pad-presets-group">
+                        <button type="button" class="deck-btn sm pad-preset-btn" data-scale="0.4">Dense (40%)</button>
+                        <button type="button" class="deck-btn sm pad-preset-btn" data-scale="0.7">Compact (70%)</button>
+                        <button type="button" class="deck-btn sm pad-preset-btn" data-scale="1.0">Default (100%)</button>
+                        <button type="button" class="deck-btn sm pad-preset-btn" data-scale="1.5">Large (150%)</button>
+                        <button type="button" class="deck-btn sm pad-preset-btn" data-scale="2.0">Huge (200%)</button>
+                    </div>
                     <button id="reset-pad-size-btn" class="deck-btn sm">Reset Size to Default (100%)</button>
                 </div>
 

@@ -87,6 +87,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const pinchHudValue = document.getElementById('pinch-hud-value');
     const currentPadSizeLabel = document.getElementById('current-pad-size-label');
     const resetPadSizeBtn = document.getElementById('reset-pad-size-btn');
+    const padSizeSlider = document.getElementById('pad-size-slider');
 
     // ==========================================================================
     // State
@@ -94,6 +95,10 @@ document.addEventListener('DOMContentLoaded', () => {
     let midiAccess = null;
     let midiOutputs = [];
     let midiOutput = null;
+
+    // Wake Lock Persistence State
+    const STORAGE_KEY_WAKE_LOCK = 'midi_wake_lock_enabled';
+    let wakeLockRequested = false;
     let wakeLock = null;
 
     let setlists = [];
@@ -104,8 +109,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Dynamic Pad Sizing & Multi-Touch Pinch State
     const STORAGE_KEY_PAD_SCALE = 'midi_pad_scale';
-    const MIN_PAD_SCALE = 0.6;
-    const MAX_PAD_SCALE = 2.2;
+    const MIN_PAD_SCALE = 0.3; // Allow shrinking down to 30% for ultra-dense stage layouts
+    const MAX_PAD_SCALE = 2.5; // Allow scaling up to 250% for high-visibility stage floor monitors
     const DEFAULT_PAD_SCALE = 1.0;
 
     let currentPadScale = DEFAULT_PAD_SCALE;
@@ -1311,47 +1316,116 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // ==========================================================================
-    // 9. Screen Wake Lock (Independent Stage Mode)
     // ==========================================================================
+    // 9. Screen Wake Lock (Independent Stage Mode with Persistence)
+    // ==========================================================================
+    function isWakeLockSupported() {
+        return ('wakeLock' in navigator);
+    }
+
+    function updateWakeLockUI(isActive) {
+        if (!wakeBtn || !wakeLabel) return;
+        if (isActive) {
+            wakeBtn.classList.add('active');
+            wakeLabel.textContent = 'AWAKE: ON';
+            wakeBtn.setAttribute('aria-pressed', 'true');
+        } else {
+            wakeBtn.classList.remove('active');
+            wakeLabel.textContent = 'AWAKE';
+            wakeBtn.setAttribute('aria-pressed', 'false');
+        }
+    }
+
+    async function requestWakeLock() {
+        if (!isWakeLockSupported()) return;
+        try {
+            if (wakeLock && !wakeLock.released) return;
+            wakeLock = await navigator.wakeLock.request('screen');
+            updateWakeLockUI(true);
+            wakeLock.addEventListener('release', () => {
+                wakeLock = null;
+                // If user did not manually turn it off, keep UI indicated or update on next visible
+                if (!wakeLockRequested) {
+                    updateWakeLockUI(false);
+                }
+            });
+        } catch (err) {
+            console.warn("Screen Wake Lock could not be acquired:", err);
+            if (!wakeLockRequested) {
+                updateWakeLockUI(false);
+            }
+        }
+    }
+
+    async function releaseWakeLock() {
+        if (wakeLock) {
+            try {
+                await wakeLock.release();
+            } catch (e) {
+                console.warn("Error releasing wake lock:", e);
+            }
+            wakeLock = null;
+        }
+        updateWakeLockUI(false);
+    }
+
     async function toggleScreenWakeLock() {
-        if (!('wakeLock' in navigator)) {
+        if (!isWakeLockSupported()) {
             alert("Screen Wake Lock API is not supported on this browser.");
             return;
         }
 
-        try {
-            if (!wakeLock) {
-                wakeLock = await navigator.wakeLock.request('screen');
-                wakeBtn.classList.add('active');
-                wakeLabel.textContent = 'AWAKE: ON';
-                wakeLock.addEventListener('release', () => {
-                    wakeLock = null;
-                    wakeBtn.classList.remove('active');
-                    wakeLabel.textContent = 'AWAKE';
-                });
-            } else {
-                await wakeLock.release();
-                wakeLock = null;
-                wakeBtn.classList.remove('active');
-                wakeLabel.textContent = 'AWAKE';
+        if (wakeLockRequested) {
+            wakeLockRequested = false;
+            try {
+                localStorage.setItem(STORAGE_KEY_WAKE_LOCK, 'false');
+            } catch (e) {
+                console.warn("Unable to save wake lock preference:", e);
             }
-        } catch (err) {
-            console.error("Screen Wake Lock error:", err);
-            wakeBtn.classList.remove('active');
-            wakeLabel.textContent = 'AWAKE';
+            await releaseWakeLock();
+        } else {
+            wakeLockRequested = true;
+            try {
+                localStorage.setItem(STORAGE_KEY_WAKE_LOCK, 'true');
+            } catch (e) {
+                console.warn("Unable to save wake lock preference:", e);
+            }
+            await requestWakeLock();
         }
     }
 
     // Re-acquire wake lock if returning to visibility while active
     document.addEventListener('visibilitychange', async () => {
-        if (wakeLock !== null && document.visibilityState === 'visible') {
-            try {
-                wakeLock = await navigator.wakeLock.request('screen');
-            } catch (e) {
-                console.warn("Could not re-acquire wake lock on visibility change:", e);
-            }
+        if (wakeLockRequested && document.visibilityState === 'visible') {
+            await requestWakeLock();
         }
     });
+
+    function initWakeLockPersistence() {
+        if (!isWakeLockSupported()) return;
+        try {
+            const savedState = localStorage.getItem(STORAGE_KEY_WAKE_LOCK);
+            if (savedState === 'true') {
+                wakeLockRequested = true;
+                updateWakeLockUI(true);
+                // Attempt to acquire wake lock immediately
+                requestWakeLock().catch(() => {});
+
+                // Fallback for browsers requiring user interaction before granting wake lock
+                const onFirstInteraction = () => {
+                    if (wakeLockRequested && !wakeLock) {
+                        requestWakeLock();
+                    }
+                    window.removeEventListener('pointerdown', onFirstInteraction);
+                    window.removeEventListener('keydown', onFirstInteraction);
+                };
+                window.addEventListener('pointerdown', onFirstInteraction, { passive: true, once: true });
+                window.addEventListener('keydown', onFirstInteraction, { passive: true, once: true });
+            }
+        } catch (e) {
+            console.warn("Unable to load wake lock state from localStorage:", e);
+        }
+    }
 
     // ==========================================================================
     // 10. Fullscreen Mode
@@ -1386,6 +1460,17 @@ document.addEventListener('DOMContentLoaded', () => {
         if (currentPadSizeLabel) {
             currentPadSizeLabel.textContent = `${percent}%`;
         }
+        if (padSizeSlider && Number(padSizeSlider.value) !== percent) {
+            padSizeSlider.value = percent;
+        }
+        document.querySelectorAll('.pad-preset-btn').forEach(btn => {
+            const presetScale = parseFloat(btn.dataset.scale);
+            if (!isNaN(presetScale) && Math.abs(presetScale - scale) < 0.04) {
+                btn.classList.add('accent');
+            } else {
+                btn.classList.remove('accent');
+            }
+        });
         if (saveToStorage) {
             savePadScale(scale);
         }
@@ -1547,6 +1632,35 @@ document.addEventListener('DOMContentLoaded', () => {
                 hidePinchHud(1000);
             });
         }
+
+        // 5. Direct Slider Control in Backup Modal
+        if (padSizeSlider) {
+            padSizeSlider.addEventListener('input', (e) => {
+                const targetScale = parseFloat(e.target.value) / 100;
+                currentPadScale = Math.min(Math.max(targetScale, MIN_PAD_SCALE), MAX_PAD_SCALE);
+                applyPadScale(currentPadScale, false);
+                showPinchHud(currentPadScale);
+            });
+            padSizeSlider.addEventListener('change', (e) => {
+                const targetScale = parseFloat(e.target.value) / 100;
+                currentPadScale = Math.min(Math.max(targetScale, MIN_PAD_SCALE), MAX_PAD_SCALE);
+                applyPadScale(currentPadScale, true);
+                hidePinchHud(800);
+            });
+        }
+
+        // 6. Quick Preset Buttons in Backup Modal
+        document.querySelectorAll('.pad-preset-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const targetScale = parseFloat(btn.dataset.scale);
+                if (!isNaN(targetScale)) {
+                    currentPadScale = Math.min(Math.max(targetScale, MIN_PAD_SCALE), MAX_PAD_SCALE);
+                    applyPadScale(currentPadScale, true);
+                    showPinchHud(currentPadScale);
+                    hidePinchHud(1000);
+                }
+            });
+        });
     }
 
     // ==========================================================================
@@ -1727,6 +1841,10 @@ document.addEventListener('DOMContentLoaded', () => {
         if (currentPadSizeLabel) {
             currentPadSizeLabel.textContent = `${Math.round(currentPadScale * 100)}%`;
         }
+        if (padSizeSlider) {
+            padSizeSlider.value = Math.round(currentPadScale * 100);
+        }
+        applyPadScale(currentPadScale, false);
         openModal(backupDialog);
     });
     exportActiveBtn.addEventListener('click', exportActiveSetlist);
@@ -1762,6 +1880,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // ==========================================================================
     initQuickColorPresets();
     initPinchToResize();
+    initWakeLockPersistence();
     loadData();
     initMidi();
 
